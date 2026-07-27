@@ -1,0 +1,13 @@
+.idea/
+**/.idea/
+*.iml
+
+deploy/.env
+
+personal-assistant-web/node_modules/
+personal-assistant-web/dist/
+personal-assistant-web/*.tsbuildinfo
+
+personal-assistant-server/target/
+personal-assistant-server/logs/
+*.log

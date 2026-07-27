@@ -19,7 +19,7 @@ const router = createRouter({
         { path: 'gold', name: 'gold', component: () => import('@/views/gold/GoldView.vue'), meta: { title: '金价关注' } },
         { path: 'reminders', name: 'reminders', component: () => import('@/views/reminder/ReminderCenterView.vue'), meta: { title: '提醒中心' } },
         { path: 'scheduler', name: 'scheduler', component: () => import('@/views/scheduler/SchedulerView.vue'), meta: { title: '调度管理' } },
-        { path: 'system', name: 'system', component: () => import('@/views/placeholder/PlaceholderView.vue'), meta: { title: '系统设置' } },
+        { path: 'system', name: 'system', component: () => import('@/views/system/SystemSettingsView.vue'), meta: { title: '系统设置' } },
         { path: 'operations', name: 'operations', component: () => import('@/views/operations/OperationsView.vue'), meta: { title: '部署运维' } },
       ],
     },

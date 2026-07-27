@@ -39,7 +39,7 @@ personal-assistant
 
 ## 默认账号
 
-首次启动会初始化 `admin / admin123`。登录后应尽快增加修改密码能力并更换默认密码。
+首次启动会初始化默认管理员账号。首次登录后请在“系统设置”中立即修改密码。
 
 ## 本地启动
 
@@ -87,3 +87,8 @@ docker compose --env-file .env up -d --build
 ```
 
 服务包括 PostgreSQL、Adminer、后端和 Nginx；数据库及应用文件使用 Docker volume 持久化。
+## 云服务器一键发布
+
+首次拉取脚本后，在项目目录执行 chmod +x deploy.sh。
+
+以后在项目目录执行 ./deploy.sh。脚本会依次执行发布前备份、拉取 origin/master、校验 Compose 配置、构建并启动容器，以及后端健康检查。服务器存在已跟踪文件改动时，脚本会停止，避免覆盖服务器上的修改。

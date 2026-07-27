@@ -8,7 +8,7 @@
         <el-form-item label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="请输入密码" show-password /></el-form-item>
         <el-button type="primary" native-type="submit" class="login-button" :loading="loading">登录</el-button>
       </el-form>
-      <div class="login-tip">首次启动默认账号：admin / admin123</div>
+      <div class="login-tip">请使用管理员账号登录</div>
     </div>
   </div>
 </template>
@@ -23,7 +23,7 @@ import { login } from '@/api/auth';
 const router = useRouter();
 const formRef = ref<FormInstance>();
 const loading = ref(false);
-const form = reactive({ username: 'admin', password: 'admin123' });
+const form = reactive({ username: 'admin', password: '' });
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],

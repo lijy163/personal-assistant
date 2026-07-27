@@ -3,6 +3,7 @@ package com.personal.assistant.module.auth.controller;
 import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.AuthUser;
 import com.personal.assistant.common.security.SecurityContextHelper;
+import com.personal.assistant.module.auth.dto.ChangePasswordRequest;
 import com.personal.assistant.module.auth.dto.LoginRequest;
 import com.personal.assistant.module.auth.dto.LoginResponse;
 import com.personal.assistant.module.auth.service.AuthService;
@@ -36,6 +37,13 @@ public class AuthController {
     @GetMapping("/me")
     public ApiResponse<AuthUser> me() {
         return ApiResponse.success(SecurityContextHelper.currentUser());
+    }
+
+    @Operation(summary = "修改当前用户密码")
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(SecurityContextHelper.currentUserId(), request);
+        return ApiResponse.success();
     }
 
     @Operation(summary = "退出登录")

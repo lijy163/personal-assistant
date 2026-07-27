@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.common.security.JwtTokenService;
+import com.personal.assistant.module.auth.dto.ChangePasswordRequest;
 import com.personal.assistant.module.auth.dto.LoginRequest;
 import com.personal.assistant.module.auth.dto.LoginResponse;
 import com.personal.assistant.module.auth.entity.UserAccount;
@@ -49,5 +50,22 @@ public class AuthService {
         String token = jwtTokenService.generateToken(user.getId(), user.getUsername());
         log.info("用户登录成功，userId: {}", user.getId());
         return new LoginResponse(token, user.getUsername(), user.getDisplayName(), user.getId());
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        UserAccount user = userAccountMapper.selectById(userId);
+        if (user == null || !Boolean.TRUE.equals(user.getEnabled())) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "当前密码不正确");
+        }
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "新密码不能与当前密码相同");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userAccountMapper.updateById(user);
     }
 }

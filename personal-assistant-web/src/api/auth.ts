@@ -8,3 +8,7 @@ export function login(data: LoginRequest) {
 }
 
 export function logout() { return http.post('/auth/logout'); }
+
+export function changePassword(data: { currentPassword: string; newPassword: string }) {
+  return http.post('/auth/change-password', data);
+}
