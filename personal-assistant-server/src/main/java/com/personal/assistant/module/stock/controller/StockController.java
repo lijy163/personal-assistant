@@ -10,7 +10,6 @@ import com.personal.assistant.module.stock.dto.StockQuoteStatusResponse;
 import com.personal.assistant.module.stock.dto.StockWatchRequest;
 import com.personal.assistant.module.stock.entity.StockCollectionResult;
 import com.personal.assistant.module.stock.entity.StockWatchItem;
-import com.personal.assistant.module.stock.service.StockSectorFundFlowService;
 import com.personal.assistant.module.stock.service.StockService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
