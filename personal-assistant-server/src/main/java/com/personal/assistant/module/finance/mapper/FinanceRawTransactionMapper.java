@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.finance.entity.FinanceRawTransaction;import org.apache.ibatis.annotations.Mapper;@Mapper public interface FinanceRawTransactionMapper extends BaseMapper<FinanceRawTransaction>{}

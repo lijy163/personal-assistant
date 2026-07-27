@@ -1,0 +1,1 @@
+package com.personal.assistant.module.stock.dto;import java.math.*;import java.time.*;import java.util.*;public record StockSectorFundFlowResponse(String scope,String provider,LocalDateTime quoteTime,List<Sector>sectors){public record Sector(String industry,int stockCount,BigDecimal mainNetInflow,BigDecimal averageMainNetRatio,BigDecimal averageChangePercent){}}

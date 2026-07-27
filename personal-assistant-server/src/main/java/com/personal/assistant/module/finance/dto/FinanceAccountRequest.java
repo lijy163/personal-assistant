@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.dto;import jakarta.validation.constraints.*;public record FinanceAccountRequest(@NotBlank @Size(max=120)String accountName,@NotBlank String accountType,@Size(max=120)String institution,@Size(max=10)String currency,Boolean enabled){}

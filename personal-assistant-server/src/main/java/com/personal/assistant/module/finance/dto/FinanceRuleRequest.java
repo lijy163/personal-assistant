@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.dto;import jakarta.validation.constraints.*;public record FinanceRuleRequest(@NotBlank @Size(max=100)String ruleName,@NotBlank @Size(max=200)String keyword,@NotNull Long categoryId,Integer priority,Boolean enabled){}

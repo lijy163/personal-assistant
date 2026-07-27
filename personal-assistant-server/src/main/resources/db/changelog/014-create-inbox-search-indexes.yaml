@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-create-inbox-search-indexes
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: inbox_item
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: content, type: text, constraints: { nullable: false } }
+              - column: { name: suggested_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: confirmed_type, type: varchar(30) }
+              - column: { name: confidence, type: "numeric(5,2)", constraints: { nullable: false } }
+              - column: { name: reason, type: varchar(500) }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: confirmed_at, type: timestamp }
+        - createIndex: { tableName: inbox_item, indexName: idx_inbox_user_status_time, columns: [{ column: { name: user_id } }, { column: { name: status } }, { column: { name: created_at, descending: true } }] }
+        - sql:
+            dbms: postgresql
+            sql: CREATE INDEX idx_task_search_fts ON task_item USING GIN (to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(tags,'') || ' ' || coalesce(remark,'')))
+        - sql:
+            dbms: postgresql
+            sql: CREATE INDEX idx_devlog_search_fts ON dev_log USING GIN (to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(task_goal,'') || ' ' || coalesce(core_changes,'') || ' ' || coalesce(tags,'')))
+        - sql:
+            dbms: postgresql
+            sql: CREATE INDEX idx_finance_search_fts ON finance_transaction USING GIN (to_tsvector('simple', coalesce(merchant,'') || ' ' || coalesce(description,'') || ' ' || coalesce(note,'')))

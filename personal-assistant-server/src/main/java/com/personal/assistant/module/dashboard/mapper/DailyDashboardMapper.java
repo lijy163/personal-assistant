@@ -1,0 +1,1 @@
+package com.personal.assistant.module.dashboard.mapper;import com.personal.assistant.module.dashboard.dto.DailyDashboardResponse;import org.apache.ibatis.annotations.*;@Mapper public interface DailyDashboardMapper{@SelectProvider(type=DailyDashboardSql.class,method="sql")DailyDashboardResponse get(@Param("uid")Long uid);}

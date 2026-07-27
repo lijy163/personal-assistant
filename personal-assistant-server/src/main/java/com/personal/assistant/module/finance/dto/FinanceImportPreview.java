@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.dto;import com.personal.assistant.module.finance.entity.FinanceRawTransaction;import java.util.List;public record FinanceImportPreview(Long batchId,int totalCount,int duplicateCount,int invalidCount,List<FinanceRawTransaction> rows){}

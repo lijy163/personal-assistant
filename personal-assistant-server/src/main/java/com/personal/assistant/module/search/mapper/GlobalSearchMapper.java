@@ -1,0 +1,1 @@
+package com.personal.assistant.module.search.mapper;import com.personal.assistant.module.search.dto.SearchResult;import org.apache.ibatis.annotations.*;import java.util.*;@Mapper public interface GlobalSearchMapper{@SelectProvider(type=GlobalSearchSql.class,method="sql")List<SearchResult> search(@Param("uid")Long uid,@Param("keyword")String keyword);}

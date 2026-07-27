@@ -1,0 +1,3 @@
+package com.personal.assistant.module.finance.entity;
+import com.baomidou.mybatisplus.annotation.*;import lombok.Data;import java.math.*;import java.time.*;
+@Data @TableName("finance_transaction") public class FinanceTransaction {@TableId(type=IdType.AUTO)private Long id;private Long userId;private Long accountId;private Long importBatchId;private Long categoryId;private String fingerprint;private String platformTransactionNo;private LocalDateTime transactionTime;private String merchant;private String description;private String direction;private BigDecimal amount;private String transactionType;private String note;private Boolean confirmed;private LocalDateTime createdAt;private LocalDateTime updatedAt;}

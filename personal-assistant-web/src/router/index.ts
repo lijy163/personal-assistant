@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import AppLayout from '@/layouts/AppLayout.vue';
+import AppLayout from '@/layouts/ResponsiveAppLayout.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/', component: AppLayout, redirect: '/dashboard', meta: { requiresAuth: true },
       children: [
-        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DashboardView.vue'), meta: { title: '仪表盘' } },
+        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DailyDashboardView.vue'), meta: { title: '仪表盘' } },
         { path: 'life', name: 'life', component: () => import('@/views/task/TaskListView.vue'), meta: { title: '生活事项', taskType: 'LIFE' } },
         { path: 'work', name: 'work', component: () => import('@/views/task/TaskListView.vue'), meta: { title: '工作事项', taskType: 'WORK' } },
         { path: 'learning/plans', name: 'learningPlans', component: () => import('@/views/learning/LearningPlanView.vue'), meta: { title: '学习计划' } },
@@ -17,6 +17,9 @@ const router = createRouter({
         { path: 'learning/growth', name: 'learningGrowth', component: () => import('@/views/learning/GrowthDashboardView.vue'), meta: { title: '成长看板' } },
         { path: 'devlogs', name: 'devlogs', component: () => import('@/views/devlog/DevLogView.vue'), meta: { title: '开发记录' } },
         { path: 'devlog-tokens', name: 'devlogTokens', component: () => import('@/views/devlog/PatManagementView.vue'), meta: { title: '推送令牌' } },
+        { path: 'finance', name: 'finance', component: () => import('@/views/finance/FinanceView.vue'), meta: { title: '个人账单' } },
+        { path: 'inbox', name: 'inbox', component: () => import('@/views/inbox/InboxView.vue'), meta: { title: '统一收件箱' } },
+        { path: 'reports', name: 'reports', component: () => import('@/views/report/ReportView.vue'), meta: { title: '自动报告' } },
         { path: 'stocks', name: 'stocks', component: () => import('@/views/stock/StockView.vue'), meta: { title: '股票关注' } },
         { path: 'gold', name: 'gold', component: () => import('@/views/gold/GoldView.vue'), meta: { title: '金价关注' } },
         { path: 'reminders', name: 'reminders', component: () => import('@/views/reminder/ReminderCenterView.vue'), meta: { title: '提醒中心' } },

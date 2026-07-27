@@ -1,0 +1,1 @@
+package com.personal.assistant.module.report.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.report.entity.GeneratedReport;import org.apache.ibatis.annotations.Mapper;@Mapper public interface GeneratedReportMapper extends BaseMapper<GeneratedReport>{}

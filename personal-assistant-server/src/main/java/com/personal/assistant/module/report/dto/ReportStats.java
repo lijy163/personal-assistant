@@ -1,0 +1,1 @@
+package com.personal.assistant.module.report.dto;import java.math.BigDecimal;public record ReportStats(int completedTasks,int createdTasks,int learningMinutes,int devLogCount,BigDecimal income,BigDecimal expense){}

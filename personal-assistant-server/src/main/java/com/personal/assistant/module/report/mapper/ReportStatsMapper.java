@@ -1,0 +1,1 @@
+package com.personal.assistant.module.report.mapper;import com.personal.assistant.module.report.dto.ReportStats;import org.apache.ibatis.annotations.*;import java.time.*;@Mapper public interface ReportStatsMapper{@SelectProvider(type=ReportStatsSql.class,method="sql")ReportStats stats(@Param("uid")Long uid,@Param("start")LocalDate start,@Param("end")LocalDate end);}

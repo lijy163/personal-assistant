@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.finance.entity.FinanceImportBatch;import org.apache.ibatis.annotations.Mapper;@Mapper public interface FinanceImportBatchMapper extends BaseMapper<FinanceImportBatch>{}

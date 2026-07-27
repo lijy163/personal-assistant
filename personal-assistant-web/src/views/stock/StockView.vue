@@ -61,6 +61,10 @@
         </el-card>
       </el-tab-pane>
 
+      <el-tab-pane label="资金流向" name="fundFlow">
+        <StockFundFlowPanel />
+      </el-tab-pane>
+
       <el-tab-pane label="关注列表" name="watch">
         <el-card>
           <template #header>
@@ -176,6 +180,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+import StockFundFlowPanel from './StockFundFlowPanel.vue';
 import {
   collectStocks,
   getStockMarketMap,

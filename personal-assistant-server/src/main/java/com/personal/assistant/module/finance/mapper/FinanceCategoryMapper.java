@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.finance.entity.FinanceCategory;import org.apache.ibatis.annotations.Mapper;@Mapper public interface FinanceCategoryMapper extends BaseMapper<FinanceCategory>{}

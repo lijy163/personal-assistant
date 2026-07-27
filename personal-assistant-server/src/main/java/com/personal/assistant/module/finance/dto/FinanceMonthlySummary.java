@@ -1,0 +1,1 @@
+package com.personal.assistant.module.finance.dto;import java.math.BigDecimal;import java.util.List;public record FinanceMonthlySummary(String month,BigDecimal income,BigDecimal expense,BigDecimal balance,List<CategoryAmount> categories){public record CategoryAmount(String categoryName,BigDecimal amount){}}
