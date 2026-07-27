@@ -1,9 +1,11 @@
 package com.personal.assistant.common.config;
 
 import com.personal.assistant.common.security.JwtAuthenticationFilter;
+import com.personal.assistant.common.security.PatAuthenticationFilter;
 import com.personal.assistant.common.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * Spring Security 配置：无状态 JWT 认证，放行登录、健康检查和接口文档。
  */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
@@ -28,11 +31,14 @@ public class SecurityConfig {
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final PatAuthenticationFilter patAuthenticationFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          PatAuthenticationFilter patAuthenticationFilter,
                           RestAuthenticationEntryPoint authenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.patAuthenticationFilter = patAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
@@ -46,7 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(patAuthenticationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 

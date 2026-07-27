@@ -5,7 +5,7 @@
       <el-menu router :default-active="$route.path" class="sidebar-menu">
         <el-menu-item index="/dashboard">仪表盘</el-menu-item><el-menu-item index="/life">生活事项</el-menu-item><el-menu-item index="/work">工作事项</el-menu-item>
         <el-sub-menu index="learning"><template #title>学习成长</template><el-menu-item index="/learning/plans">学习计划</el-menu-item><el-menu-item index="/learning/records">学习记录</el-menu-item><el-menu-item index="/learning/summaries">学习总结</el-menu-item><el-menu-item index="/learning/growth">成长看板</el-menu-item></el-sub-menu>
-        <el-menu-item index="/stocks">股票关注</el-menu-item><el-menu-item index="/gold">金价关注</el-menu-item><el-menu-item index="/reminders">提醒中心</el-menu-item><el-menu-item index="/scheduler">调度管理</el-menu-item><el-menu-item index="/system">系统设置</el-menu-item><el-menu-item index="/operations">部署运维</el-menu-item>
+        <el-sub-menu index="devlog"><template #title>开发沉淀</template><el-menu-item index="/devlogs">开发记录</el-menu-item><el-menu-item index="/devlog-tokens">推送令牌</el-menu-item></el-sub-menu><el-menu-item index="/stocks">股票关注</el-menu-item><el-menu-item index="/gold">金价关注</el-menu-item><el-menu-item index="/reminders">提醒中心</el-menu-item><el-menu-item index="/scheduler">调度管理</el-menu-item><el-menu-item index="/system">系统设置</el-menu-item><el-menu-item index="/operations">部署运维</el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
