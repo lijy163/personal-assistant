@@ -1,0 +1,3 @@
+package com.personal.assistant.module.task.dto;
+import java.time.LocalDateTime;
+public record TaskResponse(Long id,String title,TaskType itemType,TaskPriority priority,TaskStatus status,LocalDateTime planTime,LocalDateTime deadline,boolean reminderEnabled,String tags,String remark,String category,String workType,String projectName,LocalDateTime statusChangedAt,LocalDateTime createdAt,LocalDateTime updatedAt) {}

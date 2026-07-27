@@ -1,0 +1,1 @@
+package com.personal.assistant.module.reminder.dto;import jakarta.validation.constraints.*;public record ChannelRequest(@NotBlank @Size(max=100)String name,@NotBlank String channelType,@NotBlank(message="Webhook 不能为空")String webhook,Boolean enabled){}

@@ -1,0 +1,1 @@
+package com.personal.assistant.module.reminder.dto;public record ChannelResponse(Long id,String name,String channelType,String maskedWebhook,boolean enabled){}

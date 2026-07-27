@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-task-module
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: task_item
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: title, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: item_type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: priority, type: varchar(20), defaultValue: MEDIUM, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), defaultValue: NOT_STARTED, constraints: { nullable: false } }
+              - column: { name: plan_time, type: timestamp }
+              - column: { name: deadline, type: timestamp }
+              - column: { name: reminder_enabled, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: tags, type: varchar(1000) }
+              - column: { name: remark, type: text }
+              - column: { name: archived, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: status_changed_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: task_item
+            indexName: idx_task_user_type_status
+            columns: [{ column: { name: user_id } }, { column: { name: item_type } }, { column: { name: status } }]
+        - createTable:
+            tableName: life_item_detail
+            columns:
+              - column: { name: task_id, type: bigint, constraints: { primaryKey: true, nullable: false, foreignKeyName: fk_life_task, references: task_item(id), deleteCascade: true } }
+              - column: { name: category, type: varchar(50), constraints: { nullable: false } }
+        - createTable:
+            tableName: work_item_detail
+            columns:
+              - column: { name: task_id, type: bigint, constraints: { primaryKey: true, nullable: false, foreignKeyName: fk_work_task, references: task_item(id), deleteCascade: true } }
+              - column: { name: work_type, type: varchar(50), constraints: { nullable: false } }
+              - column: { name: project_name, type: varchar(100) }
+        - createTable:
+            tableName: work_review
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: task_id, type: bigint, constraints: { nullable: false, foreignKeyName: fk_review_task, references: task_item(id), deleteCascade: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: content, type: text, constraints: { nullable: false } }
+              - column: { name: result_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }

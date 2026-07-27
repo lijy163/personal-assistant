@@ -1,0 +1,1 @@
+package com.personal.assistant.module.reminder.dto;import jakarta.validation.constraints.*;import java.time.*;public record ReminderRequest(@NotBlank @Size(max=30)String sourceType,Long sourceId,Long channelId,@NotBlank(message="提醒标题不能为空") @Size(max=200)String title,@Size(max=5000)String content,@NotNull(message="提醒时间不能为空")LocalDateTime remindTime){}

@@ -1,0 +1,1 @@
+package com.personal.assistant.module.scheduler.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.scheduler.entity.SchedulerJobLog;import org.apache.ibatis.annotations.Mapper;@Mapper public interface SchedulerJobLogMapper extends BaseMapper<SchedulerJobLog>{}

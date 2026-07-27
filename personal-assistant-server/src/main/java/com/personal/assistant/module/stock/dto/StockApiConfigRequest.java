@@ -1,0 +1,1 @@
+package com.personal.assistant.module.stock.dto;import jakarta.validation.constraints.*;public record StockApiConfigRequest(@NotBlank @Size(max=100)String apiName,@Size(max=200)String purpose,@NotBlank @Size(max=1000)String endpoint,@NotBlank String authType,String apiKey,@NotNull @Min(1) @Max(10000)Integer rateLimitPerMinute,Boolean enabled){}

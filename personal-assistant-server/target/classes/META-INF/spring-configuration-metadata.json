@@ -1,0 +1,25 @@
+{
+  "groups": [
+    {
+      "name": "jwt",
+      "type": "com.personal.assistant.common.security.JwtProperties",
+      "sourceType": "com.personal.assistant.common.security.JwtProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "jwt.expiration-minutes",
+      "type": "java.lang.Long",
+      "description": "令牌有效期，单位分钟。",
+      "sourceType": "com.personal.assistant.common.security.JwtProperties",
+      "defaultValue": 720
+    },
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "签名密钥，生产环境必须通过环境变量覆盖，长度不少于 32 字节。",
+      "sourceType": "com.personal.assistant.common.security.JwtProperties"
+    }
+  ],
+  "hints": []
+}

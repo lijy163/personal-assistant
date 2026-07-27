@@ -1,0 +1,1 @@
+package com.personal.assistant.module.task.dto; public enum TaskType { LIFE, WORK, LEARNING }

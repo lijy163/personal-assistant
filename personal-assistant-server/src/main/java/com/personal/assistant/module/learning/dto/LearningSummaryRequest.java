@@ -1,0 +1,2 @@
+package com.personal.assistant.module.learning.dto;import jakarta.validation.constraints.*;import java.time.*;
+public record LearningSummaryRequest(Long planId,@NotBlank(message="总结类型不能为空") String summaryType,@NotNull LocalDate periodStart,@NotNull LocalDate periodEnd,@Size(max=5000) String gains,@Size(max=5000) String problems,@Size(max=5000) String improvements,@NotBlank(message="总结正文不能为空") String markdownContent,@Size(max=1000) String tags){}

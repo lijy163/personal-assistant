@@ -1,0 +1,7 @@
+import http from './http';
+export interface Reminder{id:number;sourceType:string;sourceId:number|null;channelId:number|null;title:string;content:string|null;remindTime:string;status:string;lastError:string|null;sentAt:string|null;}
+export interface ReminderPayload{sourceType:string;sourceId:number|null;channelId:number|null;title:string;content:string;remindTime:string;}
+export interface Channel{id:number;name:string;channelType:string;maskedWebhook:string;enabled:boolean;}
+export interface NotificationLog{id:number;reminderId:number|null;channelId:number;success:boolean;message:string;createdAt:string;}
+export const listReminders=(status?:string)=>http.get<unknown,{data:Reminder[]}>('/reminders',{params:{status:status||undefined}});export const createReminder=(data:ReminderPayload)=>http.post('/reminders',data);export const updateReminder=(id:number,data:ReminderPayload)=>http.put(`/reminders/${id}`,data);export const changeReminderStatus=(id:number,status:string)=>http.patch(`/reminders/${id}/status`,null,{params:{status}});
+export const listChannels=()=>http.get<unknown,{data:Channel[]}>('/reminders/channels');export const saveChannel=(data:Record<string,unknown>)=>http.post('/reminders/channels',data);export const updateChannel=(id:number,data:Record<string,unknown>)=>http.put(`/reminders/channels/${id}`,data);export const testChannel=(id:number)=>http.post(`/reminders/channels/${id}/test`);export const listNotificationLogs=()=>http.get<unknown,{data:NotificationLog[]}>('/reminders/logs');

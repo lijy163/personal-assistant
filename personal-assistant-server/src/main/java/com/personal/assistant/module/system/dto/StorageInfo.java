@@ -1,0 +1,1 @@
+package com.personal.assistant.module.system.dto;public record StorageInfo(String path,long totalBytes,long freeBytes,long usableBytes,double usedPercent,String status){}

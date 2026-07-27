@@ -1,0 +1,2 @@
+package com.personal.assistant.module.learning.dto;import jakarta.validation.constraints.*;import java.time.*;
+public record LearningRecordRequest(@NotNull(message="必须关联学习计划") Long planId,@NotBlank(message="学习内容不能为空") @Size(max=5000) String content,@NotNull @Min(value=0,message="学习耗时不能为负数") Integer durationMinutes,@Size(max=5000) String result,@Size(max=5000) String problem,@Size(max=5000) String nextAction,@NotNull(message="记录时间不能为空") LocalDateTime recordTime){}

@@ -1,0 +1,2 @@
+package com.personal.assistant.module.learning.dto;import com.personal.assistant.module.learning.entity.*;import java.util.*;
+public record GrowthStats(long planCount,long inProgressCount,long completedCount,long totalMinutes,Map<String,Long> topicDistribution,List<LearningRecord> recentRecords,List<LearningSummary> recentSummaries){}

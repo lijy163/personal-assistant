@@ -1,0 +1,3 @@
+package com.personal.assistant.module.learning.entity;
+import com.baomidou.mybatisplus.annotation.*;import lombok.Data;import java.time.*;
+@Data @TableName("learning_summary") public class LearningSummary {@TableId(type=IdType.AUTO) private Long id;private Long userId;private Long planId;private String summaryType;private LocalDate periodStart;private LocalDate periodEnd;private String gains;private String problems;private String improvements;private String markdownContent;private String tags;private LocalDateTime createdAt;private LocalDateTime updatedAt;}

@@ -1,0 +1,1 @@
+package com.personal.assistant.module.scheduler.job;public interface JobHandler {String type();String execute(String configJson);}

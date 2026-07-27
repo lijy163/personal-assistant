@@ -1,0 +1,1 @@
+package com.personal.assistant.module.scheduler.dto;import jakarta.validation.constraints.*;public record SchedulerJobRequest(@NotBlank @Size(max=100)String jobName,@NotBlank String jobType,@NotBlank String cronExpression,Boolean enabled,@Size(max=5000)String configJson){}

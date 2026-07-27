@@ -1,0 +1,1 @@
+package com.personal.assistant.module.system.dto;import java.time.*;public record SystemStatus(String application,String version,String database,String scheduler,String quartzMode,StorageInfo storage,LocalDateTime checkedAt){}

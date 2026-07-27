@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: personal-assistant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-personal_assistant}
+      POSTGRES_USER: ${POSTGRES_USER:-assistant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-assistant_password}
+      TZ: Asia/Shanghai
+    # 安全：默认仅绑定到本机回环地址，数据库不暴露公网。
+    # 本地用 Adminer 容器内网访问即可；如需宿主机直连可改回 "5432:5432"。
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assistant} -d ${POSTGRES_DB:-personal_assistant}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer:4
+    container_name: personal-assistant-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Redis 第一版可不启用，需要缓存/任务锁时取消注释并在后端配置中开启。
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: personal-assistant-redis
+  #   restart: unless-stopped
+  #   command: ["redis-server", "--appendonly", "yes"]
+  #   ports:
+  #     - "127.0.0.1:6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  backend:
+    build:
+      context: ../personal-assistant-server
+      dockerfile: Dockerfile
+    container_name: personal-assistant-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-personal_assistant}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-assistant}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-assistant_password}
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-secret-key-at-least-32-bytes}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-720}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-personal_assistant}
+      POSTGRES_USER: ${POSTGRES_USER:-assistant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-assistant_password}
+      APP_STORAGE_PATH: /app
+      BACKUP_SCRIPT: /app/scripts/backup.sh
+      BACKUP_DIR: /app/backup
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      STORAGE_WARNING_PERCENT: ${STORAGE_WARNING_PERCENT:-85}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    volumes:
+      - app-files:/app/files
+      - app-logs:/app/logs
+      - app-backup:/app/backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/api/system/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  nginx:
+    build:
+      context: ../personal-assistant-web
+      dockerfile: Dockerfile
+    container_name: personal-assistant-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+    name: personal-assistant-postgres-data
+  app-files:
+    name: personal-assistant-files
+  app-logs:
+    name: personal-assistant-logs
+  app-backup:
+    name: personal-assistant-backup
+  # 启用 Redis 时取消注释
+  # redis-data:
+  #   name: personal-assistant-redis-data

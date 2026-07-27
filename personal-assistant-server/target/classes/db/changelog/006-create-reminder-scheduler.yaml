@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-reminder-scheduler
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: notification_channel
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: channel_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: webhook_encrypted, type: text, constraints: { nullable: false } }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createTable:
+            tableName: reminder
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: source_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: source_id, type: bigint }
+              - column: { name: channel_id, type: bigint, constraints: { foreignKeyName: fk_reminder_channel, references: notification_channel(id) } }
+              - column: { name: title, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: content, type: text }
+              - column: { name: remind_time, type: timestamp, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), defaultValue: PENDING, constraints: { nullable: false } }
+              - column: { name: last_error, type: text }
+              - column: { name: sent_at, type: timestamp }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: reminder
+            indexName: idx_reminder_due
+            columns: [{ column: { name: status } }, { column: { name: remind_time } }]
+        - createTable:
+            tableName: notification_log
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: reminder_id, type: bigint }
+              - column: { name: channel_id, type: bigint }
+              - column: { name: success, type: boolean, constraints: { nullable: false } }
+              - column: { name: message, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createTable:
+            tableName: scheduler_job
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: job_name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: job_type, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: cron_expression, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: config_json, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createTable:
+            tableName: scheduler_job_log
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: job_id, type: bigint, constraints: { nullable: false, foreignKeyName: fk_job_log_job, references: scheduler_job(id), deleteCascade: true } }
+              - column: { name: started_at, type: timestamp, constraints: { nullable: false } }
+              - column: { name: finished_at, type: timestamp }
+              - column: { name: success, type: boolean }
+              - column: { name: result_message, type: text }

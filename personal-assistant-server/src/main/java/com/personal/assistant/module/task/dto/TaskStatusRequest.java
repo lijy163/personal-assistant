@@ -1,0 +1,1 @@
+package com.personal.assistant.module.task.dto; import jakarta.validation.constraints.NotNull; public record TaskStatusRequest(@NotNull(message="状态不能为空") TaskStatus status) {}

@@ -1,0 +1,10 @@
+import http from './http';
+export interface LearningPlan{id:number;title:string;topic:string;target:string|null;stage:string|null;startDate:string|null;targetDate:string|null;progress:number;status:string;resourceLinks:string|null;reviewTime:string|null;}
+export interface PlanPayload{title:string;topic:string;target:string;stage:string;startDate:string|null;targetDate:string|null;progress:number;status:string;resourceLinks:string;reviewTime:string|null;}
+export interface LearningRecord{id:number;planId:number;content:string;durationMinutes:number;result:string|null;problem:string|null;nextAction:string|null;recordTime:string;}
+export interface LearningSummary{id:number;planId:number|null;summaryType:string;periodStart:string;periodEnd:string;gains:string|null;problems:string|null;improvements:string|null;markdownContent:string;tags:string|null;}
+export interface GrowthStats{planCount:number;inProgressCount:number;completedCount:number;totalMinutes:number;topicDistribution:Record<string,number>;recentRecords:LearningRecord[];recentSummaries:LearningSummary[];}
+export const listPlans=(params:Record<string,unknown>={})=>http.get<unknown,{data:LearningPlan[]}>('/learning/plans',{params});export const createPlan=(data:PlanPayload)=>http.post('/learning/plans',data);export const updatePlan=(id:number,data:PlanPayload)=>http.put(`/learning/plans/${id}`,data);export const archivePlan=(id:number)=>http.patch(`/learning/plans/${id}/archive`);
+export const listLearningRecords=(params:Record<string,unknown>={})=>http.get<unknown,{data:LearningRecord[]}>('/learning/records',{params});export const createLearningRecord=(data:Record<string,unknown>)=>http.post('/learning/records',data);
+export const listLearningSummaries=(params:Record<string,unknown>={})=>http.get<unknown,{data:LearningSummary[]}>('/learning/summaries',{params});export const createLearningSummary=(data:Record<string,unknown>)=>http.post('/learning/summaries',data);
+export const getGrowthStats=()=>http.get<unknown,{data:GrowthStats}>('/learning/growth-stats');

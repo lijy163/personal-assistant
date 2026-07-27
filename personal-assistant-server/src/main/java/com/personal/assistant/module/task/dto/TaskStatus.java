@@ -1,0 +1,1 @@
+package com.personal.assistant.module.task.dto; public enum TaskStatus { DRAFT, NOT_STARTED, IN_PROGRESS, COMPLETED, ARCHIVED }

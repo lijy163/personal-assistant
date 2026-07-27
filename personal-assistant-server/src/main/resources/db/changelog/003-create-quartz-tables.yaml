@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-quartz-tables
+      author: assistant
+      comment: Quartz 官方 PostgreSQL 表结构，用于 JDBC JobStore 持久化调度任务
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/quartz-postgres.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true

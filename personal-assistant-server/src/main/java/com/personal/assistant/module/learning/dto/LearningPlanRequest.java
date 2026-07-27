@@ -1,0 +1,2 @@
+package com.personal.assistant.module.learning.dto;import jakarta.validation.constraints.*;import java.time.*;
+public record LearningPlanRequest(@NotBlank(message="计划标题不能为空") @Size(max=200) String title,@NotBlank(message="学习主题不能为空") @Size(max=100) String topic,@Size(max=5000) String target,@Size(max=100) String stage,LocalDate startDate,LocalDate targetDate,@NotNull @Min(value=0,message="进度不能小于 0") @Max(value=100,message="进度不能大于 100") Integer progress,@NotBlank String status,@Size(max=5000) String resourceLinks,LocalDateTime reviewTime){}

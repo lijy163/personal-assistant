@@ -1,0 +1,11 @@
+package com.personal.assistant.module.learning.service;
+import com.personal.assistant.common.exception.BusinessException;import com.personal.assistant.module.learning.dto.*;import com.personal.assistant.module.learning.entity.*;import com.personal.assistant.module.learning.mapper.*;import org.junit.jupiter.api.*;import org.junit.jupiter.api.extension.ExtendWith;import org.mockito.*;import org.mockito.junit.jupiter.MockitoExtension;import java.time.*;import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Mockito.*;
+@ExtendWith(MockitoExtension.class) class LearningServiceTest {
+ @Mock LearningPlanMapper plans;@Mock LearningRecordMapper records;@Mock LearningSummaryMapper summaries;LearningService service;
+ @BeforeEach void setUp(){service=new LearningService(plans,records,summaries);}
+ private LearningPlanRequest plan(String status){return new LearningPlanRequest("深入学习 Java","Java","掌握并发","基础",LocalDate.now(),LocalDate.now().plusMonths(2),20,status,"https://example.com",LocalDateTime.now().plusDays(7));}
+ @Test void createPlanSetsOwnerAndDefaults(){service.createPlan(5L,plan("IN_PROGRESS"));ArgumentCaptor<LearningPlan> c=ArgumentCaptor.forClass(LearningPlan.class);verify(plans).insert(c.capture());assertEquals(5L,c.getValue().getUserId());assertEquals(20,c.getValue().getProgress());assertFalse(c.getValue().getArchived());}
+ @Test void createPlanRejectsInvalidStatus(){assertThrows(BusinessException.class,()->service.createPlan(5L,plan("PAUSED")));}
+ @Test void createRecordRequiresOwnedPlan(){LearningPlan p=new LearningPlan();p.setId(2L);p.setUserId(8L);when(plans.selectById(2L)).thenReturn(p);var r=new LearningRecordRequest(2L,"学习内容",30,"成果",null,"继续",LocalDateTime.now());assertThrows(BusinessException.class,()->service.createRecord(5L,r));verify(records,never()).insert(any(LearningRecord.class));}
+ @Test void summaryRejectsReversedPeriod(){var r=new LearningSummaryRequest(null,"WEEKLY",LocalDate.now(),LocalDate.now().minusDays(1),"收获",null,null,"# 总结",null);assertThrows(BusinessException.class,()->service.createSummary(5L,r));verify(summaries,never()).insert(any(LearningSummary.class));}
+}

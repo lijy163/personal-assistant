@@ -1,0 +1,1 @@
+package com.personal.assistant.module.task.dto; import jakarta.validation.constraints.*; public record WorkReviewRequest(@NotBlank(message="复盘内容不能为空") @Size(max=5000,message="复盘内容不超过 5000 字") String content,@NotBlank(message="结果分类不能为空") @Size(max=30,message="结果分类不超过 30 字") String resultType) {}

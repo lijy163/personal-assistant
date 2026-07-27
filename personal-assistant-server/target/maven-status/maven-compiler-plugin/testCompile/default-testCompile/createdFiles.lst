@@ -1,0 +1,9 @@
+com\personal\assistant\module\stock\service\StockServiceTest.class
+com\personal\assistant\module\scheduler\service\SchedulerJobServiceTest$1.class
+com\personal\assistant\module\learning\service\LearningServiceTest.class
+com\personal\assistant\module\reminder\service\ReminderServiceTest.class
+com\personal\assistant\module\task\service\TaskServiceTest.class
+com\personal\assistant\module\backup\service\BackupServiceTest.class
+com\personal\assistant\module\system\service\SystemServiceTest.class
+com\personal\assistant\module\scheduler\service\SchedulerJobServiceTest.class
+com\personal\assistant\module\quicknote\service\QuickNoteServiceTest.class

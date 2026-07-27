@@ -1,0 +1,1 @@
+package com.personal.assistant.module.stock.dto;import java.time.*;public record StockApiConfigResponse(Long id,String apiName,String purpose,String endpoint,String authType,String maskedApiKey,int rateLimitPerMinute,boolean enabled,LocalDateTime lastTestTime,Boolean lastTestSuccess,String lastTestMessage){}

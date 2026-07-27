@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-backup-record
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: backup_record
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: backup_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: file_path, type: varchar(1000) }
+              - column: { name: file_size, type: bigint }
+              - column: { name: message, type: text }
+              - column: { name: started_at, type: timestamp, constraints: { nullable: false } }
+              - column: { name: finished_at, type: timestamp }

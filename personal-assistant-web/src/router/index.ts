@@ -1,0 +1,29 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import AppLayout from '@/layouts/AppLayout.vue';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/login', name: 'login', component: () => import('@/views/login/LoginView.vue') },
+    {
+      path: '/', component: AppLayout, redirect: '/dashboard', meta: { requiresAuth: true },
+      children: [
+        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DashboardView.vue'), meta: { title: '仪表盘' } },
+        { path: 'life', name: 'life', component: () => import('@/views/task/TaskListView.vue'), meta: { title: '生活事项', taskType: 'LIFE' } },
+        { path: 'work', name: 'work', component: () => import('@/views/task/TaskListView.vue'), meta: { title: '工作事项', taskType: 'WORK' } },
+        { path: 'learning/plans', name: 'learningPlans', component: () => import('@/views/learning/LearningPlanView.vue'), meta: { title: '学习计划' } },
+        { path: 'learning/records', name: 'learningRecords', component: () => import('@/views/learning/LearningRecordView.vue'), meta: { title: '学习记录' } },
+        { path: 'learning/summaries', name: 'learningSummaries', component: () => import('@/views/learning/LearningSummaryView.vue'), meta: { title: '学习总结' } },
+        { path: 'learning/growth', name: 'learningGrowth', component: () => import('@/views/learning/GrowthDashboardView.vue'), meta: { title: '成长看板' } },
+        { path: 'stocks', name: 'stocks', component: () => import('@/views/stock/StockView.vue'), meta: { title: '股票关注' } },
+        { path: 'gold', name: 'gold', component: () => import('@/views/gold/GoldView.vue'), meta: { title: '金价关注' } },
+        { path: 'reminders', name: 'reminders', component: () => import('@/views/reminder/ReminderCenterView.vue'), meta: { title: '提醒中心' } },
+        { path: 'scheduler', name: 'scheduler', component: () => import('@/views/scheduler/SchedulerView.vue'), meta: { title: '调度管理' } },
+        { path: 'system', name: 'system', component: () => import('@/views/placeholder/PlaceholderView.vue'), meta: { title: '系统设置' } },
+        { path: 'operations', name: 'operations', component: () => import('@/views/operations/OperationsView.vue'), meta: { title: '部署运维' } },
+      ],
+    },
+  ],
+});
+router.beforeEach(to => { const token=localStorage.getItem('token'); if(to.meta.requiresAuth&&!token)return{name:'login'}; if(to.name==='login'&&token)return{name:'dashboard'}; });
+export default router;
