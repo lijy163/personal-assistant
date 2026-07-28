@@ -37,7 +37,7 @@
         <el-form-item v-if="isLife" label="计划时间" prop="planTime"><el-date-picker v-model="form.planTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" placeholder="选择时间" style="width:100%" /></el-form-item><el-form-item v-else label="截止时间" prop="deadline"><el-date-picker v-model="form.deadline" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" placeholder="选择时间" style="width:100%" /></el-form-item>
         <el-form-item label="标签"><el-input v-model="form.tags" placeholder="多个标签用逗号分隔" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="4" maxlength="5000" show-word-limit /></el-form-item>
-        <el-form-item label="提醒"><el-switch v-model="form.reminderEnabled" /><span class="form-help">调度能力将在第 5 阶段接入</span></el-form-item>
+        <el-form-item label="提醒"><el-switch v-model="form.reminderEnabled" /><span class="form-help">{{ isLife ? '生活事项提醒暂未接入' : '工作日 08:50 合并提醒，仅推送标题' }}</span></el-form-item>
       </el-form>
       <template #footer><el-button @click="formVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="save">保存</el-button></template>
     </el-dialog>
