@@ -21,11 +21,13 @@ import static org.mockito.Mockito.when;
 class InboxServiceTest {
     @Mock
     InboxItemMapper mapper;
+    @Mock
+    InboxAttachmentService attachments;
     InboxService service;
 
     @BeforeEach
     void setUp() {
-        service = new InboxService(mapper);
+        service = new InboxService(mapper, attachments);
     }
 
     @Test

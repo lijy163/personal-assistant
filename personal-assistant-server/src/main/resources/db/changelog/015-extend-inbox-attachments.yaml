@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-extend-inbox-attachments
+      author: personal-assistant
+      changes:
+        - addColumn:
+            tableName: inbox_item
+            columns:
+              - column: { name: input_type, type: varchar(20), defaultValue: TEXT, constraints: { nullable: false } }
+              - column: { name: source, type: varchar(30), defaultValue: WEB, constraints: { nullable: false } }
+              - column: { name: tags, type: varchar(500) }
+              - column: { name: remark, type: varchar(2000) }
+              - column: { name: recorded_at, type: timestamp }
+        - createTable:
+            tableName: inbox_attachment
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: inbox_item_id, type: bigint, constraints: { nullable: false, foreignKeyName: fk_inbox_attachment_item, references: inbox_item(id), deleteCascade: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: original_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: stored_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: content_type, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: file_size, type: bigint, constraints: { nullable: false } }
+              - column: { name: file_kind, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: storage_path, type: text, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: inbox_attachment
+            indexName: idx_inbox_attachment_item
+            columns: [{ column: { name: inbox_item_id } }, { column: { name: user_id } }]

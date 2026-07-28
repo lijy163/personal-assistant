@@ -5,6 +5,10 @@ spring:
     active: local
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 75MB
   quartz:
     job-store-type: jdbc
     jdbc:

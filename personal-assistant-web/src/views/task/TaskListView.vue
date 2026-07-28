@@ -9,7 +9,7 @@
       </el-form>
     </el-card>
     <el-card><template #header><div class="task-card-header"><span>{{ pageName }}列表</span><el-button type="primary" @click="openCreate">新建{{ pageName }}</el-button></div></template>
-      <el-table v-loading="loading" :data="items" empty-text="暂无事项">
+      <el-table class="desktop-task-table" v-loading="loading" :data="items" empty-text="暂无事项">
         <el-table-column prop="title" label="标题" min-width="180"><template #default="{row}"><el-link type="primary" @click="showDetail(row)">{{ row.title }}</el-link></template></el-table-column>
         <el-table-column :label="isLife?'分类':'工作类型'" width="120"><template #default="{row}">{{ isLife?row.category:row.workType }}</template></el-table-column>
         <el-table-column v-if="!isLife" prop="projectName" label="关联项目" width="140" />
@@ -18,6 +18,14 @@
         <el-table-column :label="isLife?'计划时间':'截止时间'" width="180"><template #default="{row}">{{ formatTime(isLife?row.planTime:row.deadline) }}</template></el-table-column>
         <el-table-column label="操作" width="220" fixed="right"><template #default="{row}"><el-button link type="primary" @click="openEdit(row)">编辑</el-button><el-button v-if="row.status!=='COMPLETED'" link type="success" @click="complete(row)">完成</el-button><el-button link type="danger" @click="archive(row)">归档</el-button></template></el-table-column>
       </el-table>
+      <div class="mobile-task-list">
+        <article v-for="row in items" :key="row.id" class="mobile-task-card" @click="showDetail(row)">
+          <div class="mobile-task-top"><b>{{ row.title }}</b><el-tag :type="priorityType(row.priority)" size="small">{{ labelOf(priorityOptions,row.priority) }}</el-tag></div>
+          <div class="mobile-task-meta"><span>{{ isLife?row.category:row.workType }}</span><span>{{ formatTime(isLife?row.planTime:row.deadline) }}</span></div>
+          <div class="mobile-task-actions" @click.stop><el-tag :type="statusType(row.status)">{{ labelOf(statusOptions,row.status) }}</el-tag><span class="spacer"></span><el-button text type="primary" @click="openEdit(row)">编辑</el-button><el-button v-if="row.status!=='COMPLETED'" text type="success" @click="complete(row)">完成</el-button></div>
+        </article>
+        <el-empty v-if="!loading&&!items.length" description="暂无事项" />
+      </div>
     </el-card>
 
     <el-dialog v-model="formVisible" :title="editingId?'编辑事项':`新建${pageName}`" width="620px" destroy-on-close>
@@ -58,4 +66,7 @@ async function save(){if(!(await formRef.value?.validate()))return;saving.value=
 async function complete(row:TaskItem){await changeTaskStatus(row.id,'COMPLETED');ElMessage.success('已完成');await load();} async function archive(row:TaskItem){await ElMessageBox.confirm(`确认归档“${row.title}”？`,'归档确认',{type:'warning'});await archiveTask(row.id);ElMessage.success('已归档');await load();}
 async function showDetail(row:TaskItem){selected.value=row;detailVisible.value=true;if(!isLife.value)reviews.value=(await listReviews(row.id)).data;} async function saveReview(){if(!selected.value||!reviewForm.content.trim()){ElMessage.warning('请输入复盘内容');return;}reviewSaving.value=true;try{await addReview(selected.value.id,reviewForm);reviewForm.content='';reviews.value=(await listReviews(selected.value.id)).data;ElMessage.success('复盘已保存');}finally{reviewSaving.value=false;}}
 watch(taskType,()=>{resetFilters();assignForm(emptyForm());});onMounted(load);
-</script>
+</script><style scoped>
+.mobile-task-list{display:none}
+@media(max-width:768px){.desktop-task-table{display:none}.mobile-task-list{display:flex;flex-direction:column;gap:12px}.mobile-task-card{padding:14px;background:#fff;border:1px solid #e2e8f0;border-radius:14px}.mobile-task-top,.mobile-task-actions{display:flex;align-items:center;gap:8px}.mobile-task-top{justify-content:space-between}.mobile-task-top b{min-width:0;word-break:break-word}.mobile-task-meta{display:flex;justify-content:space-between;gap:10px;margin:12px 0;color:#64748b;font-size:13px}.mobile-task-meta span:last-child{text-align:right}.spacer{flex:1}.filter-card :deep(.el-card__body){padding:14px}.task-card-header{gap:10px}.task-card-header .el-button{flex-shrink:0}}
+</style>
