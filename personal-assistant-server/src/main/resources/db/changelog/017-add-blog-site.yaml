@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-add-blog-site
+      author: personal-assistant
+      changes:
+        - addColumn:
+            tableName: blog_post
+            columns:
+              - column:
+                  name: site
+                  type: varchar(20)
+                  defaultValue: WORK
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: blog_post
+            indexName: idx_blog_post_site_public
+            columns:
+              - column: { name: site }
+              - column: { name: status }
+              - column: { name: published_at }

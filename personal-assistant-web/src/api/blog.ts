@@ -1,19 +1,20 @@
 import http from './http';
 
 export type BlogStatus = 'DRAFT' | 'PUBLISHED';
+export type BlogSite = 'WORK' | 'RAIN7';
 export interface BlogPost {
   id:number; userId:number; title:string; slug:string; summary:string|null; markdownContent:string;
-  coverUrl:string|null; category:string|null; tags:string|null; status:BlogStatus; pinned:boolean;
+  coverUrl:string|null; category:string|null; tags:string|null; status:BlogStatus; site:BlogSite; pinned:boolean;
   seoTitle:string|null; seoDescription:string|null; viewCount:number; publishedAt:string|null;
   createdAt:string; updatedAt:string;
 }
 export interface BlogPostSummary {
   id:number; title:string; slug:string; summary:string|null; coverUrl:string|null; category:string|null;
-  tags:string|null; pinned:boolean; viewCount:number; publishedAt:string; updatedAt:string;
+  tags:string|null; site:BlogSite; pinned:boolean; viewCount:number; publishedAt:string; updatedAt:string;
 }
 export interface BlogPostPayload {
   title:string; slug:string; summary:string; markdownContent:string; coverUrl:string; category:string;
-  tags:string; pinned:boolean; seoTitle:string; seoDescription:string;
+  tags:string; site:BlogSite; pinned:boolean; seoTitle:string; seoDescription:string;
 }
 export interface BlogArchive { posts:BlogPostSummary[]; categories:string[]; tags:string[]; }
 
@@ -26,4 +27,4 @@ export const unpublishBlogPost=(id:number)=>http.post(`/blog/admin/posts/${id}/u
 export const deleteBlogPost=(id:number)=>http.delete(`/blog/admin/posts/${id}`);
 export const uploadBlogAsset=(id:number,file:File)=>{const data=new FormData();data.append('file',file);return http.post<unknown,{data:{id:number;url:string}}>(`/blog/admin/posts/${id}/assets`,data);};
 export const listPublicBlog=(params:Record<string,unknown>)=>http.get<unknown,{data:BlogArchive}>('/public/blog/posts',{params});
-export const getPublicBlogPost=(slug:string)=>http.get<unknown,{data:BlogPost}>(`/public/blog/posts/${encodeURIComponent(slug)}`);
+export const getPublicBlogPost=(slug:string,site:BlogSite='WORK')=>http.get<unknown,{data:BlogPost}>(`/public/blog/posts/${encodeURIComponent(slug)}`,{params:{site}});

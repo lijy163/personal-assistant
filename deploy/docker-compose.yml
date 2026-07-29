@@ -87,6 +87,13 @@ services:
       retries: 5
       start_period: 40s
 
+
+  rain7-blog:
+    build:
+      context: ../rain7-blog
+      dockerfile: Dockerfile
+    container_name: personal-assistant-rain7-blog
+    restart: unless-stopped
   nginx:
     build:
       context: ../personal-assistant-web
@@ -98,6 +105,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      rain7-blog:
+        condition: service_started
 
 volumes:
   postgres-data:

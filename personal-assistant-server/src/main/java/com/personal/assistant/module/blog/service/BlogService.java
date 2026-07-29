@@ -85,9 +85,10 @@ public class BlogService {
         posts.deleteById(requireOwned(userId, id).getId());
     }
 
-    public BlogArchiveResponse publicArchive(String keyword, String category, String tag) {
+    public BlogArchiveResponse publicArchive(String keyword, String category, String tag, String site) {
         List<BlogPost> all = posts.selectList(new LambdaQueryWrapper<BlogPost>()
                 .eq(BlogPost::getStatus, "PUBLISHED")
+                .eq(BlogPost::getSite, normalizeSite(site))
                 .and(StringUtils.hasText(keyword), query -> query.like(BlogPost::getTitle, keyword)
                         .or().like(BlogPost::getSummary, keyword)
                         .or().like(BlogPost::getMarkdownContent, keyword))
@@ -96,16 +97,17 @@ public class BlogService {
                 .orderByDesc(BlogPost::getPinned)
                 .orderByDesc(BlogPost::getPublishedAt));
         List<BlogPost> published = posts.selectList(new LambdaQueryWrapper<BlogPost>()
-                .eq(BlogPost::getStatus, "PUBLISHED").orderByDesc(BlogPost::getPublishedAt));
+                .eq(BlogPost::getStatus, "PUBLISHED").eq(BlogPost::getSite, normalizeSite(site)).orderByDesc(BlogPost::getPublishedAt));
         List<String> categories = published.stream().map(BlogPost::getCategory).filter(StringUtils::hasText).distinct().sorted().toList();
         List<String> tags = published.stream().flatMap(post -> splitTags(post.getTags())).distinct().sorted().toList();
         return new BlogArchiveResponse(all.stream().map(this::summary).toList(), categories, tags);
     }
 
     @Transactional
-    public BlogPost publicGet(String slug) {
+    public BlogPost publicGet(String slug, String site) {
         BlogPost post = posts.selectOne(new LambdaQueryWrapper<BlogPost>()
-                .eq(BlogPost::getSlug, slug).eq(BlogPost::getStatus, "PUBLISHED"));
+                .eq(BlogPost::getSlug, slug).eq(BlogPost::getStatus, "PUBLISHED")
+                .eq(BlogPost::getSite, normalizeSite(site)));
         if (post == null) throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在或尚未发布");
         posts.update(null, new LambdaUpdateWrapper<BlogPost>().eq(BlogPost::getId, post.getId())
                 .setSql("view_count = view_count + 1"));
@@ -130,6 +132,7 @@ public class BlogService {
         post.setCategory(trimToNull(request.category()));
         post.setTags(joinTags(request.tags()));
         post.setPinned(Boolean.TRUE.equals(request.pinned()));
+        post.setSite(normalizeSite(request.site()));
         post.setSeoTitle(trimToNull(request.seoTitle()));
         post.setSeoDescription(trimToNull(request.seoDescription()));
         post.setUpdatedAt(LocalDateTime.now());
@@ -167,8 +170,12 @@ public class BlogService {
 
     private BlogPostSummary summary(BlogPost post) {
         return new BlogPostSummary(post.getId(), post.getTitle(), post.getSlug(), post.getSummary(), post.getCoverUrl(),
-                post.getCategory(), post.getTags(), Boolean.TRUE.equals(post.getPinned()), post.getViewCount(),
+                post.getCategory(), post.getTags(), post.getSite(), Boolean.TRUE.equals(post.getPinned()), post.getViewCount(),
                 post.getPublishedAt(), post.getUpdatedAt());
+    }
+
+    private String normalizeSite(String site) {
+        return "RAIN7".equalsIgnoreCase(site) ? "RAIN7" : "WORK";
     }
 
     private String validateCoverUrl(String value) {

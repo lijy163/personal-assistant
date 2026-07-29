@@ -26,12 +26,13 @@ public class BlogPublicController {
     @GetMapping("/posts")
     public ApiResponse<BlogArchiveResponse> posts(@RequestParam(required = false) String keyword,
                                                   @RequestParam(required = false) String category,
-                                                  @RequestParam(required = false) String tag) {
-        return ApiResponse.success(blogs.publicArchive(keyword, category, tag));
+                                                  @RequestParam(required = false) String tag,
+                                                  @RequestParam(defaultValue = "WORK") String site) {
+        return ApiResponse.success(blogs.publicArchive(keyword, category, tag, site));
     }
 
     @GetMapping("/posts/{slug}")
-    public ApiResponse<BlogPost> post(@PathVariable String slug) { return ApiResponse.success(blogs.publicGet(slug)); }
+    public ApiResponse<BlogPost> post(@PathVariable String slug, @RequestParam(defaultValue = "WORK") String site) { return ApiResponse.success(blogs.publicGet(slug, site)); }
 
     @GetMapping("/assets/{id}")
     public ResponseEntity<org.springframework.core.io.Resource> image(@PathVariable Long id) {

@@ -21,6 +21,7 @@ public class BlogPost {
     private String category;
     private String tags;
     private String status;
+    private String site;
     private Boolean pinned;
     private String seoTitle;
     private String seoDescription;
