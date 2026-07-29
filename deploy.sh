@@ -42,8 +42,30 @@ else
   log "后端尚未运行，跳过发布前备份"
 fi
 
-log "拉取 origin/$BRANCH"
-git pull --ff-only origin "$BRANCH"
+GIT_FETCH_RETRIES="${GIT_FETCH_RETRIES:-5}"
+GIT_LOW_SPEED_LIMIT="${GIT_LOW_SPEED_LIMIT:-100}"
+GIT_LOW_SPEED_TIME="${GIT_LOW_SPEED_TIME:-300}"
+
+fetch_origin() {
+  local attempt delay
+  for attempt in $(seq 1 "$GIT_FETCH_RETRIES"); do
+    log "拉取 origin/$BRANCH（第 $attempt/$GIT_FETCH_RETRIES 次）"
+    if git -c http.lowSpeedLimit="$GIT_LOW_SPEED_LIMIT" \
+      -c http.lowSpeedTime="$GIT_LOW_SPEED_TIME" \
+      fetch --prune origin "$BRANCH"; then
+      git merge --ff-only FETCH_HEAD
+      return 0
+    fi
+    if [ "$attempt" -lt "$GIT_FETCH_RETRIES" ]; then
+      delay=$((attempt * 15))
+      log "GitHub 网络不稳定，${delay} 秒后重试"
+      sleep "$delay"
+    fi
+  done
+  fail "拉取 origin/$BRANCH 失败。建议将 origin 切换为 ssh.github.com:443 后重试"
+}
+
+fetch_origin
 
 log "校验 Docker Compose 配置"
 compose config --quiet

@@ -1,9 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AppLayout from '@/layouts/ResponsiveAppLayout.vue';
+import BlogLayout from '@/layouts/BlogLayout.vue';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/blog', component: BlogLayout, children: [
+      { path: '', name: 'blogHome', component: () => import('@/views/blog/BlogHomeView.vue') },
+      { path: 'posts/:slug', name: 'blogPost', component: () => import('@/views/blog/BlogPostView.vue') },
+    ] },
     { path: '/login', name: 'login', component: () => import('@/views/login/LoginView.vue') },
     {
       path: '/', component: AppLayout, redirect: '/dashboard', meta: { requiresAuth: true },
@@ -24,6 +29,9 @@ const router = createRouter({
         { path: 'gold', name: 'gold', component: () => import('@/views/gold/GoldView.vue'), meta: { title: '金价关注' } },
         { path: 'reminders', name: 'reminders', component: () => import('@/views/reminder/ReminderCenterView.vue'), meta: { title: '提醒中心' } },
         { path: 'scheduler', name: 'scheduler', component: () => import('@/views/scheduler/SchedulerView.vue'), meta: { title: '调度管理' } },
+        { path: 'blog/manage', name: 'blogManage', component: () => import('@/views/blog/BlogManageView.vue'), meta: { title: '博客管理' } },
+        { path: 'blog/manage/new', name: 'blogCreate', component: () => import('@/views/blog/BlogEditorView.vue'), meta: { title: '写新文章' } },
+        { path: 'blog/manage/:id', name: 'blogEdit', component: () => import('@/views/blog/BlogEditorView.vue'), meta: { title: '编辑文章' } },
         { path: 'system', name: 'system', component: () => import('@/views/system/SystemSettingsView.vue'), meta: { title: '系统设置' } },
         { path: 'operations', name: 'operations', component: () => import('@/views/operations/OperationsView.vue'), meta: { title: '部署运维' } },
       ],

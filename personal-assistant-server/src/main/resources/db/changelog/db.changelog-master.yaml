@@ -41,3 +41,6 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/015-extend-inbox-attachments.yaml
+
+  - include:
+      file: db/changelog/016-create-blog-module.yaml

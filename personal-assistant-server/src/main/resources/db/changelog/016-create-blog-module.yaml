@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-create-blog-module
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: blog_post
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: title, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: slug, type: varchar(220), constraints: { nullable: false, unique: true } }
+              - column: { name: summary, type: varchar(500) }
+              - column: { name: markdown_content, type: text, constraints: { nullable: false } }
+              - column: { name: cover_url, type: varchar(1000) }
+              - column: { name: category, type: varchar(100) }
+              - column: { name: tags, type: varchar(500) }
+              - column: { name: status, type: varchar(20), defaultValue: DRAFT, constraints: { nullable: false } }
+              - column: { name: pinned, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: seo_title, type: varchar(200) }
+              - column: { name: seo_description, type: varchar(500) }
+              - column: { name: view_count, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: published_at, type: timestamp }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: blog_post
+            indexName: idx_blog_post_public
+            columns:
+              - column: { name: status }
+              - column: { name: pinned }
+              - column: { name: published_at }
+        - createTable:
+            tableName: blog_asset
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: post_id, type: bigint, constraints: { nullable: false, foreignKeyName: fk_blog_asset_post, references: blog_post(id), deleteCascade: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: original_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: stored_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: content_type, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: file_size, type: bigint, constraints: { nullable: false } }
+              - column: { name: storage_path, type: varchar(1000), constraints: { nullable: false } }
+              - column: { name: public_token, type: varchar(64), constraints: { nullable: false, unique: true } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: blog_asset
+            indexName: idx_blog_asset_post
+            columns:
+              - column: { name: post_id }
