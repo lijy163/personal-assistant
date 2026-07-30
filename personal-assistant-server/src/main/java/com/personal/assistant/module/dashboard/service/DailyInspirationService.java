@@ -26,7 +26,7 @@ public class DailyInspirationService {
 
     @Autowired
     public DailyInspirationService(ObjectMapper objectMapper,
-                                   @Value("${JEWELRY_GOLD_API_KEY:}") String apiKey) {
+                                   @Value("${T1QQ_API_KEY:${JEWELRY_GOLD_API_KEY:}}") String apiKey) {
         this(objectMapper, RestClient.builder().defaultHeader(HttpHeaders.USER_AGENT,
                 "Mozilla/5.0 PersonalAssistant/1.0").build(), apiKey);
     }

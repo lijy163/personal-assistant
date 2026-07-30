@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -26,7 +27,7 @@ class PublicGoldQuoteServiceTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    void convertsUsdPerOunceToCnyPerGram() {
+    void reportsMissingJewelryKey() {
         RestClient client = clientReturning(
                 "{\"price\":3000,\"updatedAt\":\"2026-07-30T01:00:00Z\"}",
                 "{\"rates\":{\"CNY\":7.2}}"
@@ -38,6 +39,9 @@ class PublicGoldQuoteServiceTest {
         assertEquals(new BigDecimal("7.2000"), result.usdCny());
         assertEquals(new BigDecimal("694.4561"), result.quotes().get(1).price());
         assertTrue(result.quotes().get(1).converted());
+        assertFalse(result.jewelryConfigured());
+        assertFalse(result.jewelryLoaded());
+        assertTrue(result.jewelryMessage().contains("T1QQ_API_KEY"));
     }
 
     @Test
@@ -46,7 +50,7 @@ class PublicGoldQuoteServiceTest {
         RestClient client = clientReturning(
                 "{\"price\":3000}",
                 "{\"rates\":{\"CNY\":7.2}}",
-                "{\"data\":{\"gold_prices\":[{\"brand\":\"周大福\",\"gold_price\":\"1025\",\"unit\":\"元/克\",\"update_date\":\"2026-07-30\"}]}}"
+                "{\"code\":200,\"data\":{\"gold_prices\":[{\"brand\":\"周大福\",\"gold_price\":\"1025\",\"unit\":\"元/克\",\"update_date\":\"2026-07-30\"}]}}"
         );
 
         var result = new PublicGoldQuoteService(new ObjectMapper(), client, "test-key").latest();
@@ -55,6 +59,9 @@ class PublicGoldQuoteServiceTest {
         assertEquals("JEWELRY_周大福", result.quotes().get(2).code());
         assertEquals(new BigDecimal("1025"), result.quotes().get(2).price());
         assertTrue(result.source().contains("应天API"));
+        assertTrue(result.jewelryConfigured());
+        assertTrue(result.jewelryLoaded());
+        assertTrue(result.jewelryMessage().contains("1 个品牌"));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

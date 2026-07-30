@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +26,7 @@ import java.util.List;
 
 @Service
 public class PublicGoldQuoteService {
+    private static final Logger log = LoggerFactory.getLogger(PublicGoldQuoteService.class);
     private static final String GOLD_URL = "https://api.gold-api.com/price/XAU";
     private static final String EXCHANGE_URL = "https://open.er-api.com/v6/latest/USD";
     private static final String JEWELRY_URL = "https://api.t1qq.com/api/v1/tool/rate/goldQuotation?key=";
@@ -35,7 +38,7 @@ public class PublicGoldQuoteService {
 
     @Autowired
     public PublicGoldQuoteService(ObjectMapper objectMapper,
-                                  @Value("${JEWELRY_GOLD_API_KEY:}") String jewelryApiKey) {
+                                  @Value("${T1QQ_API_KEY:${JEWELRY_GOLD_API_KEY:}}") String jewelryApiKey) {
         this(objectMapper, RestClient.builder().defaultHeader(HttpHeaders.USER_AGENT,
                 "Mozilla/5.0 PersonalAssistant/1.0").build(), jewelryApiKey);
     }
@@ -62,10 +65,12 @@ public class PublicGoldQuoteService {
                     "国际现货黄金 XAU/USD 实时参考价", false));
             quotes.add(new GoldPublicQuoteResponse.Quote("XAU_CNY_GRAM", "国际金折算人民币", cnyPerGram,
                     "元/克", "按实时 XAU/USD × USD/CNY ÷ 31.1034768 折算，不代表品牌零售价", true));
-            boolean jewelryLoaded = appendJewelryQuotes(quotes);
-            String source = jewelryLoaded ? "Gold API + ExchangeRate-API + 应天API" : "Gold API + ExchangeRate-API";
+
+            JewelryLoadResult jewelry = appendJewelryQuotes(quotes);
+            String source = jewelry.loaded() ? "Gold API + ExchangeRate-API + 应天API" : "Gold API + ExchangeRate-API";
             return new GoldPublicQuoteResponse(quotes, usdCny.setScale(4, RoundingMode.HALF_UP),
-                    quoteTime == null ? fetchedAt : quoteTime, fetchedAt, source, 60);
+                    quoteTime == null ? fetchedAt : quoteTime, fetchedAt, source, 60,
+                    jewelry.configured(), jewelry.loaded(), jewelry.message());
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -73,13 +78,24 @@ public class PublicGoldQuoteService {
         }
     }
 
-    private boolean appendJewelryQuotes(List<GoldPublicQuoteResponse.Quote> quotes) {
-        if (jewelryApiKey == null || jewelryApiKey.isBlank()) return false;
+    private JewelryLoadResult appendJewelryQuotes(List<GoldPublicQuoteResponse.Quote> quotes) {
+        if (jewelryApiKey == null || jewelryApiKey.isBlank()) {
+            return new JewelryLoadResult(false, false, "服务器未配置 T1QQ_API_KEY，无法查询首饰金价");
+        }
         try {
             String key = URLEncoder.encode(jewelryApiKey, StandardCharsets.UTF_8);
             JsonNode response = get(JEWELRY_URL + key);
+            if (response.path("code").asInt() != 200) {
+                String message = response.path("msg").asText("接口返回失败");
+                log.warn("应天首饰金价接口返回失败: {}", message);
+                return new JewelryLoadResult(true, false, "应天API调用失败：" + message);
+            }
             JsonNode prices = response.path("data").path("gold_prices");
-            if (!prices.isArray()) return false;
+            if (!prices.isArray()) {
+                log.warn("应天首饰金价响应缺少 data.gold_prices 数组");
+                return new JewelryLoadResult(true, false, "应天API响应格式异常，未找到品牌报价列表");
+            }
+            int loaded = 0;
             for (JsonNode item : prices) {
                 String brand = item.path("brand").asText("").trim();
                 BigDecimal price = decimal(item.path("gold_price"));
@@ -88,10 +104,14 @@ public class PublicGoldQuoteService {
                 String updateDate = item.path("update_date").asText("");
                 quotes.add(new GoldPublicQuoteResponse.Quote("JEWELRY_" + brand, brand + "首饰金", price,
                         unit, "品牌黄金首饰零售参考价" + (updateDate.isEmpty() ? "" : "，更新于 " + updateDate), false));
+                loaded++;
             }
-            return quotes.stream().anyMatch(quote -> quote.code().startsWith("JEWELRY_"));
-        } catch (Exception ignored) {
-            return false;
+            return loaded > 0
+                    ? new JewelryLoadResult(true, true, "已加载 " + loaded + " 个品牌首饰金价")
+                    : new JewelryLoadResult(true, false, "应天API未返回有效的品牌黄金价格");
+        } catch (Exception exception) {
+            log.warn("应天首饰金价接口调用异常", exception);
+            return new JewelryLoadResult(true, false, "应天API连接失败：" + safeMessage(exception));
         }
     }
 
@@ -129,5 +149,13 @@ public class PublicGoldQuoteService {
                 return null;
             }
         }
+    }
+
+    private String safeMessage(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+    }
+
+    private record JewelryLoadResult(boolean configured, boolean loaded, String message) {
     }
 }

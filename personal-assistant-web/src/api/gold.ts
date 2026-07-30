@@ -108,6 +108,9 @@ export interface GoldPublicQuoteResponse {
   fetchedAt: string;
   source: string;
   refreshIntervalSeconds: number;
+  jewelryConfigured: boolean;
+  jewelryLoaded: boolean;
+  jewelryMessage: string;
 }
 export const listGoldWatchItems = (params: Record<string, unknown> = {}) =>
   http.get<unknown, { data: GoldWatchItem[] }>('/gold/watch-items', { params });
