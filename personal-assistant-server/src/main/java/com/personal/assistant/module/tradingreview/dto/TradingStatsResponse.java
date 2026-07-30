@@ -1,0 +1,3 @@
+package com.personal.assistant.module.tradingreview.dto;
+import java.math.*;import java.util.*;
+public record TradingStatsResponse(long closedTrades,long winningTrades,long losingTrades,BigDecimal winRate,BigDecimal averageReturn,BigDecimal averageWin,BigDecimal averageLoss,BigDecimal profitLossRatio,BigDecimal realizedProfit,BigDecimal unrealizedProfit,BigDecimal totalFees,List<ErrorFrequency> frequentErrors){public record ErrorFrequency(String category,long count) {}}

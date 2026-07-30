@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-create-trading-review
+      author: personal-assistant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE trading_daily_review (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, trade_date date NOT NULL, snapshot_type varchar(20) NOT NULL,
+                trading_day boolean NOT NULL DEFAULT true, status varchar(20) NOT NULL DEFAULT 'DRAFT',
+                shanghai_change numeric(12,4), shenzhen_change numeric(12,4), chinext_change numeric(12,4),
+                rising_count int, falling_count int, flat_count int, limit_up_count int, limit_down_count int,
+                broken_board_count int, broken_board_rate numeric(12,4), max_streak int, turnover_amount numeric(22,4), turnover_change numeric(12,4),
+                sentiment_score numeric(12,4), market_stage varchar(30), suggested_position numeric(12,4), auto_conclusion text,
+                rule_version varchar(40), dimension_scores text, conclusion_generated_at timestamp, raw_metrics text, data_source varchar(100), quote_time timestamp, collected_at timestamp,
+                data_completeness varchar(30) NOT NULL DEFAULT 'MANUAL', freshness varchar(30), collection_status varchar(30) NOT NULL DEFAULT 'MANUAL',
+                failure_reason text, last_success_at timestamp, sectors text, core_stocks text, holding_check text, manual_judgment text,
+                created_at timestamp NOT NULL, updated_at timestamp NOT NULL,
+                CONSTRAINT uk_trading_review_snapshot UNIQUE(user_id, trade_date, snapshot_type)
+              );
+              CREATE INDEX idx_trading_review_user_date ON trading_daily_review(user_id, trade_date DESC);
+              CREATE TABLE trading_log (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, watch_item_id bigint, stock_code varchar(40) NOT NULL, stock_name varchar(120) NOT NULL,
+                status varchar(20) NOT NULL DEFAULT 'OPEN', strategy varchar(120), buy_logic text, sell_logic text, planned boolean NOT NULL DEFAULT false,
+                plan_execution_note text, question_buy_logic text, question_seal_funds text, question_takeover_funds text, latest_price numeric(18,4),
+                opened_at timestamp, closed_at timestamp, notes text, created_at timestamp NOT NULL, updated_at timestamp NOT NULL,
+                CONSTRAINT fk_trading_log_watch FOREIGN KEY(watch_item_id) REFERENCES stock_watch_item(id) ON DELETE SET NULL
+              );
+              CREATE INDEX idx_trading_log_user_time ON trading_log(user_id, created_at DESC);
+              CREATE TABLE trading_execution (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, trade_log_id bigint NOT NULL, side varchar(10) NOT NULL,
+                quantity numeric(20,4) NOT NULL, price numeric(18,4) NOT NULL, commission numeric(18,4) NOT NULL DEFAULT 0,
+                stamp_duty numeric(18,4) NOT NULL DEFAULT 0, transfer_fee numeric(18,4) NOT NULL DEFAULT 0,
+                occurred_at timestamp NOT NULL, remark text, created_at timestamp NOT NULL,
+                CONSTRAINT fk_execution_log FOREIGN KEY(trade_log_id) REFERENCES trading_log(id) ON DELETE CASCADE
+              );
+              CREATE INDEX idx_execution_user_log ON trading_execution(user_id, trade_log_id, occurred_at);
+              CREATE TABLE trading_next_plan (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, trade_date date NOT NULL, market_premise text, target_position numeric(12,4),
+                watch_stocks text, planned_trades text, risk_controls text, reminder_ids text, report_note text, status varchar(20) NOT NULL DEFAULT 'DRAFT',
+                created_at timestamp NOT NULL, updated_at timestamp NOT NULL, CONSTRAINT uk_trading_plan_date UNIQUE(user_id, trade_date)
+              );
+              CREATE TABLE trading_mistake (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, trade_log_id bigint, occurred_date date NOT NULL, category varchar(80) NOT NULL,
+                title varchar(200) NOT NULL, description text, root_cause text, correction text, status varchar(20) NOT NULL DEFAULT 'OPEN',
+                repeat_count int NOT NULL DEFAULT 1, created_at timestamp NOT NULL, updated_at timestamp NOT NULL,
+                CONSTRAINT fk_mistake_trade FOREIGN KEY(trade_log_id) REFERENCES trading_log(id) ON DELETE SET NULL
+              );
+              CREATE INDEX idx_trading_mistake_user_date ON trading_mistake(user_id, occurred_date DESC);

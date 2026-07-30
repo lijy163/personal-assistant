@@ -52,7 +52,7 @@ async function handleUserCommand(command: string) {
     await router.replace('/login');
   }
 }
-const typeName = (type: string) => ({ TASK: '任务', DEVLOG: '开发', FINANCE: '账单', QUICK_NOTE: '记录', LEARNING: '学习', STOCK: '股票' }[type] || type);
+const typeName = (type: string) => ({ TASK: '任务', DEVLOG: '开发', FINANCE: '账单', QUICK_NOTE: '记录', LEARNING: '学习', STOCK: '股票', TRADING_REVIEW: '交易复盘', TRADE: '交易' }[type] || type);
 const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
 </script>
 <style scoped>.app-frame{min-height:100vh}.title-row{display:flex;align-items:center;gap:8px}.mobile-menu-button{display:none;font-size:22px}.global-search{width:280px}.search-results{max-height:520px;overflow:auto;margin-top:12px}.search-item{width:100%;display:grid;grid-template-columns:70px 1fr 150px;gap:12px;text-align:left;align-items:start;border:0;border-bottom:1px solid #eee;background:white;padding:14px;cursor:pointer}.search-item:hover{background:#f8fafc}.search-item p{margin:6px 0;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-item small{text-align:right;color:#94a3b8}@media(max-width:768px){.desktop-sidebar{display:none}.mobile-menu-button{display:inline-flex}.app-header{height:60px;padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.page-desc,.desktop-quick{display:none}.global-search{width:44px}.global-search :deep(input){display:none}.header-actions{gap:6px}.app-main{padding:12px max(12px,env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow-x:hidden}.search-item{grid-template-columns:60px 1fr}.search-item small{display:none}}</style>

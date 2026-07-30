@@ -26,6 +26,7 @@ const router = createRouter({
         { path: 'inbox', name: 'inbox', component: () => import('@/views/inbox/InboxView.vue'), meta: { title: '统一收件箱' } },
         { path: 'reports', name: 'reports', component: () => import('@/views/report/ReportView.vue'), meta: { title: '自动报告' } },
         { path: 'stocks', name: 'stocks', component: () => import('@/views/stock/StockView.vue'), meta: { title: '股票关注' } },
+        { path: 'trading-reviews', name: 'tradingReviews', component: () => import('@/views/trading/TradingReviewsView.vue'), meta: { title: '交易复盘' } },
         { path: 'gold', name: 'gold', component: () => import('@/views/gold/GoldView.vue'), meta: { title: '金价关注' } },
         { path: 'reminders', name: 'reminders', component: () => import('@/views/reminder/ReminderCenterView.vue'), meta: { title: '提醒中心' } },
         { path: 'scheduler', name: 'scheduler', component: () => import('@/views/scheduler/SchedulerView.vue'), meta: { title: '调度管理' } },

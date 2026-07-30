@@ -1,0 +1,3 @@
+package com.personal.assistant.module.tradingreview.dto;
+import jakarta.validation.constraints.*;import java.math.*;import java.time.*;
+public record ExecutionRequest(@NotBlank String side,@NotNull @DecimalMin("0.0001") BigDecimal quantity,@NotNull @DecimalMin("0.0001") BigDecimal price,@DecimalMin("0") BigDecimal commission,@DecimalMin("0") BigDecimal stampDuty,@DecimalMin("0") BigDecimal transferFee,@NotNull LocalDateTime occurredAt,String remark){}

@@ -1,0 +1,3 @@
+package com.personal.assistant.module.tradingreview.dto;
+import java.math.*;import java.time.*;
+public record MarketSnapshot(BigDecimal shanghaiChange,BigDecimal shenzhenChange,BigDecimal chinextChange,Integer risingCount,Integer fallingCount,Integer flatCount,Integer limitUpCount,Integer limitDownCount,Integer brokenBoardCount,BigDecimal brokenBoardRate,Integer maxStreak,BigDecimal turnoverAmount,BigDecimal turnoverChange,String industrySectors,String conceptSectors,String source,LocalDateTime quoteTime,String rawMetrics){}

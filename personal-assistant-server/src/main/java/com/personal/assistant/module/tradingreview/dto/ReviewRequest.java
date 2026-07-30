@@ -1,0 +1,3 @@
+package com.personal.assistant.module.tradingreview.dto;
+import jakarta.validation.constraints.*;import java.math.*;import java.time.*;
+public record ReviewRequest(@NotNull LocalDate tradeDate,@NotBlank String snapshotType,Boolean tradingDay,String status,BigDecimal shanghaiChange,BigDecimal shenzhenChange,BigDecimal chinextChange,Integer risingCount,Integer fallingCount,Integer flatCount,Integer limitUpCount,Integer limitDownCount,Integer brokenBoardCount,BigDecimal brokenBoardRate,Integer maxStreak,BigDecimal turnoverAmount,BigDecimal turnoverChange,String sectors,String coreStocks,String holdingCheck,String manualJudgment){}
