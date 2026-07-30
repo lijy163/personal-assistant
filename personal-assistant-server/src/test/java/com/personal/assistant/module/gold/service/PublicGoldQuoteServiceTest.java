@@ -2,6 +2,7 @@ package com.personal.assistant.module.gold.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
@@ -13,6 +14,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PublicGoldQuoteServiceTest {
+    @Test
+    void springCreatesServiceWithObjectMapperConstructor() {
+        try (var context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(ObjectMapper.class);
+            context.register(PublicGoldQuoteService.class);
+            context.refresh();
+
+            assertTrue(context.getBean(PublicGoldQuoteService.class) != null);
+        }
+    }
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     void convertsUsdPerOunceToCnyPerGram() {

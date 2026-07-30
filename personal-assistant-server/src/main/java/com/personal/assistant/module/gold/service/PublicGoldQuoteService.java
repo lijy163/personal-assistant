@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -26,6 +27,7 @@ public class PublicGoldQuoteService {
     private final RestClient client;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public PublicGoldQuoteService(ObjectMapper objectMapper) {
         this(objectMapper, RestClient.builder().defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 PersonalAssistant/1.0").build());
     }
