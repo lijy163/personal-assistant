@@ -3,6 +3,7 @@ package com.personal.assistant.module.dashboard.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personal.assistant.module.dashboard.dto.DailyInspirationResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class DailyInspirationService {
     private final String apiKey;
     private volatile DailyInspirationResponse cached;
 
+    @Autowired
     public DailyInspirationService(ObjectMapper objectMapper,
                                    @Value("${JEWELRY_GOLD_API_KEY:}") String apiKey) {
         this(objectMapper, RestClient.builder().defaultHeader(HttpHeaders.USER_AGENT,
