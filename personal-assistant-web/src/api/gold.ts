@@ -101,6 +101,16 @@ export interface GoldPublicQuote {
   converted: boolean;
 }
 
+export interface GoldPriceAlertRule {
+  alertKey: string;
+  title: string;
+  condition: string;
+  status: 'MONITORING' | 'TRIGGERED' | 'NO_CHANNEL';
+  lastPrice: number | null;
+  lastNotifiedAt: string | null;
+  channelConfigured: boolean;
+  checkInterval: string;
+}
 export interface GoldPublicQuoteResponse {
   quotes: GoldPublicQuote[];
   usdCny: number;
@@ -140,6 +150,9 @@ export const refreshGoldQuotes = (params: { goldType?: string; enabledOnly?: boo
 
 export const getGoldQuoteStatus = (params: { goldType?: string; enabledOnly?: boolean } = {}) =>
   http.get<unknown, { data: GoldQuoteStatusResponse }>('/gold/quotes/status', { params });
+
+export const listGoldPriceAlertRules = () =>
+  http.get<unknown, { data: GoldPriceAlertRule[] }>('/gold/alert-rules');
 
 export const getGoldPublicQuotes = () =>
   http.get<unknown, { data: GoldPublicQuoteResponse }>('/gold/public-quotes');

@@ -1,6 +1,7 @@
 package com.personal.assistant.module.gold.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.personal.assistant.module.gold.dto.GoldPriceAlertRuleResponse;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
 import com.personal.assistant.module.gold.entity.GoldPriceAlertState;
 import com.personal.assistant.module.gold.mapper.GoldPriceAlertStateMapper;
@@ -42,6 +43,19 @@ public class GoldPriceAlertService {
         this.notifications = notifications;
     }
 
+    public List<GoldPriceAlertRuleResponse> listRules(Long userId) {
+        Map<String, GoldPriceAlertState> stateByKey = states.selectList(new LambdaQueryWrapper<GoldPriceAlertState>()
+                        .eq(GoldPriceAlertState::getUserId, userId))
+                .stream().collect(Collectors.toMap(GoldPriceAlertState::getAlertKey, state -> state));
+        boolean channelConfigured = channels.selectCount(new LambdaQueryWrapper<NotificationChannel>()
+                .eq(NotificationChannel::getUserId, userId)
+                .eq(NotificationChannel::getEnabled, true)) > 0;
+        return List.of(
+                rule("MARKET_800", "实时金价跌破 800 元/克", "实时折算金价 < 800 元/克", stateByKey, channelConfigured),
+                rule("JEWELRY_1000", "首饰金价跌破 1000 元/克", "周大福、老庙任一品牌 < 1000 元/克", stateByKey, channelConfigured),
+                rule("JEWELRY_900", "首饰金价跌破 900 元/克", "周大福、老庙任一品牌 < 900 元/克", stateByKey, channelConfigured)
+        );
+    }
     @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Shanghai")
     public void scan() {
         try {
@@ -106,6 +120,15 @@ public class GoldPriceAlertService {
         }
     }
 
+    private GoldPriceAlertRuleResponse rule(String alertKey, String title, String condition,
+                                            Map<String, GoldPriceAlertState> stateByKey, boolean channelConfigured) {
+        GoldPriceAlertState state = stateByKey.get(alertKey);
+        String status = !channelConfigured ? "NO_CHANNEL"
+                : state != null && Boolean.TRUE.equals(state.getBelowThreshold()) ? "TRIGGERED" : "MONITORING";
+        return new GoldPriceAlertRuleResponse(alertKey, title, condition, status,
+                state == null ? null : state.getLastPrice(),
+                state == null ? null : state.getLastNotifiedAt(), channelConfigured, "每 5 分钟");
+    }
     private void scanUserSafely(Long userId, NotificationChannel channel, GoldPublicQuoteResponse response) {
         try {
             scanUser(userId, channel, response);

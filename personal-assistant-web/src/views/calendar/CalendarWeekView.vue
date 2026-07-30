@@ -40,13 +40,13 @@ const START_HOUR = 6;
 const END_HOUR = 23;
 const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
 const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index);
-const hourHeight = ref(36);
+const hourHeight = ref(42);
 const canvasHeight = computed(() => (END_HOUR - START_HOUR) * hourHeight.value);
 const now = ref(new Date());
 const timer = window.setInterval(() => { now.value = new Date(); }, 60000);
 
 function fitHeight() {
-  hourHeight.value = Math.max(25, Math.min(48, (window.innerHeight - 300) / (END_HOUR - START_HOUR)));
+  hourHeight.value = window.innerWidth <= 600 ? 40 : 42;
 }
 onMounted(() => { fitHeight(); window.addEventListener('resize', fitHeight); });
 onBeforeUnmount(() => { window.clearInterval(timer); window.removeEventListener('resize', fitHeight); });

@@ -4,12 +4,14 @@ import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.SecurityContextHelper;
 import com.personal.assistant.module.gold.dto.GoldApiConfigRequest;
 import com.personal.assistant.module.gold.dto.GoldApiConfigResponse;
+import com.personal.assistant.module.gold.dto.GoldPriceAlertRuleResponse;
 import com.personal.assistant.module.gold.dto.GoldQuoteRefreshResponse;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
 import com.personal.assistant.module.gold.dto.GoldQuoteStatusResponse;
 import com.personal.assistant.module.gold.dto.GoldWatchRequest;
 import com.personal.assistant.module.gold.entity.GoldCollectionResult;
 import com.personal.assistant.module.gold.entity.GoldWatchItem;
+import com.personal.assistant.module.gold.service.GoldPriceAlertService;
 import com.personal.assistant.module.gold.service.GoldService;
 import com.personal.assistant.module.gold.service.PublicGoldQuoteService;
 import jakarta.validation.Valid;
@@ -30,10 +32,13 @@ import java.util.List;
 public class GoldController {
     private final GoldService service;
     private final PublicGoldQuoteService publicQuoteService;
+    private final GoldPriceAlertService alertService;
 
-    public GoldController(GoldService service, PublicGoldQuoteService publicQuoteService) {
+    public GoldController(GoldService service, PublicGoldQuoteService publicQuoteService,
+                          GoldPriceAlertService alertService) {
         this.service = service;
         this.publicQuoteService = publicQuoteService;
+        this.alertService = alertService;
     }
 
     private Long uid() {
@@ -93,6 +98,10 @@ public class GoldController {
         return ApiResponse.success(publicQuoteService.latest());
     }
 
+    @GetMapping("/alert-rules")
+    public ApiResponse<List<GoldPriceAlertRuleResponse>> alertRules() {
+        return ApiResponse.success(alertService.listRules(uid()));
+    }
     @PostMapping("/quotes/refresh")
     public ApiResponse<GoldQuoteRefreshResponse> refreshQuotes(@RequestParam(required = false) String goldType,
                                                                @RequestParam(defaultValue = "true") boolean enabledOnly) {
