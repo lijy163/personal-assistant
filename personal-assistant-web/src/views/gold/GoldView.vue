@@ -23,7 +23,7 @@
       <el-alert v-if="publicError" :title="publicError" type="warning" :closable="false" show-icon />
       <div class="public-card-grid" v-loading="publicLoading">
         <article v-for="quote in publicQuotes?.quotes || []" :key="quote.code" class="public-card">
-          <small>{{ quote.converted ? '实时折算参考' : '国际市场现货' }}</small>
+          <small>{{ quote.code.startsWith('JEWELRY_') ? '品牌首饰零售价' : quote.converted ? '实时折算参考' : '国际市场现货' }}</small>
           <h3>{{ quote.displayName }}</h3>
           <div><strong>{{ formatNumber(quote.price, quote.converted ? 4 : 2) }}</strong><span>{{ quote.unit }}</span></div>
           <p>{{ quote.description }}</p>

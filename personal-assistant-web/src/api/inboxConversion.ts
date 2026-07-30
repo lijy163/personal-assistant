@@ -1,0 +1,4 @@
+import http from './http';
+export interface ConversionInput{type:string;title?:string;taskType?:string;priority?:string;category?:string;workType?:string;projectName?:string;planTime?:string;deadline?:string;remindTime?:string;channelId?:number;accountId?:number;categoryId?:number;amount?:number;direction?:string;transactionTime?:string;learningPlanId?:number;durationMinutes?:number;note?:string;}
+export interface ConversionResult{inboxId:number;convertedType:string;convertedId:number;convertedAt:string;route:string;version:number;}
+export const convertInbox=(id:number,data:ConversionInput)=>http.post<unknown,{data:ConversionResult}>(`/inbox-conversions/${id}`,data);export const undoInboxConversion=(id:number)=>http.post(`/inbox-conversions/${id}/undo`);export const getInboxConversion=(id:number)=>http.get<unknown,{data:ConversionResult}>(`/inbox-conversions/${id}`);

@@ -1,0 +1,2 @@
+package com.personal.assistant.module.automation.entity;import com.baomidou.mybatisplus.annotation.*;import lombok.Data;import java.time.LocalDateTime;
+@Data @TableName("automation_execution")public class AutomationExecution{@TableId(type=IdType.AUTO)private Long id;private Long userId;private Long ruleId;private String sourceType;private String sourceId;private String idempotencyKey;private String status;private Integer attemptCount;private String resultType;private Long resultId;private String failureReason;private LocalDateTime startedAt;private LocalDateTime finishedAt;}

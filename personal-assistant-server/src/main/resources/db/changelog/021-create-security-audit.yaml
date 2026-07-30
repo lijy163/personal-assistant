@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-security-audit
+      author: codex
+      changes:
+        - addColumn:
+            tableName: user_account
+            columns:
+              - column: { name: failed_login_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: locked_until, type: timestamp }
+              - column: { name: last_failed_login_at, type: timestamp }
+        - createTable:
+            tableName: security_audit_log
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint }
+              - column: { name: username, type: varchar(64) }
+              - column: { name: operation, type: varchar(50), constraints: { nullable: false } }
+              - column: { name: resource_type, type: varchar(50) }
+              - column: { name: resource_id, type: varchar(100) }
+              - column: { name: result, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: ip_address, type: varchar(64) }
+              - column: { name: user_agent, type: varchar(1000) }
+              - column: { name: failure_reason, type: varchar(1000) }
+              - column: { name: occurred_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex: { tableName: security_audit_log, indexName: idx_security_audit_user_time, columns: [ { column: { name: user_id } }, { column: { name: occurred_at, descending: true } } ] }
+        - addColumn:
+            tableName: backup_record
+            columns:
+              - column: { name: user_id, type: bigint }
+              - column: { name: sha256, type: varchar(64) }
+              - column: { name: verification_status, type: varchar(20), defaultValue: NOT_VERIFIED, constraints: { nullable: false } }
+              - column: { name: verified_at, type: timestamp }
+              - column: { name: verification_message, type: varchar(1000) }

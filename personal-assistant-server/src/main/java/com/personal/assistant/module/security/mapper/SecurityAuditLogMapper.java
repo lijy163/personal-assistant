@@ -1,0 +1,1 @@
+package com.personal.assistant.module.security.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.security.entity.SecurityAuditLog;import org.apache.ibatis.annotations.Mapper;@Mapper public interface SecurityAuditLogMapper extends BaseMapper<SecurityAuditLog>{}

@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-create-calendar-center
+      author: codex
+      changes:
+        - createTable:
+            tableName: calendar_event_override
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: source_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: source_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: title_override, type: varchar(200) }
+              - column: { name: start_at, type: timestamp, constraints: { nullable: false } }
+              - column: { name: end_at, type: timestamp }
+              - column: { name: all_day, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: color, type: varchar(20) }
+              - column: { name: recurrence_rule, type: varchar(200) }
+              - column: { name: workday_only, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: calendar_event_override, columnNames: user_id, source_type, source_id, constraintName: uk_calendar_override_source }
+        - createIndex: { tableName: calendar_event_override, indexName: idx_calendar_override_user_time, columns: [ { column: { name: user_id } }, { column: { name: start_at } } ] }
+        - createTable:
+            tableName: calendar_custom_event
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: title, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: description, type: text }
+              - column: { name: start_at, type: timestamp, constraints: { nullable: false } }
+              - column: { name: end_at, type: timestamp }
+              - column: { name: all_day, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), defaultValue: PENDING, constraints: { nullable: false } }
+              - column: { name: color, type: varchar(20), defaultValue: '#5b7cfa' }
+              - column: { name: recurrence_rule, type: varchar(200) }
+              - column: { name: workday_only, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex: { tableName: calendar_custom_event, indexName: idx_calendar_custom_user_time, columns: [ { column: { name: user_id } }, { column: { name: start_at } } ] }

@@ -1,52 +1,23 @@
 databaseChangeLog:
-  - include:
-      file: db/changelog/001-create-user-account.yaml
-  - include:
-      file: db/changelog/002-create-quick-note.yaml
-  - include:
-      file: db/changelog/003-create-quartz-tables.yaml
-
-  - include:
-      file: db/changelog/004-create-task-module.yaml
-
-  - include:
-      file: db/changelog/005-create-learning-module.yaml
-
-  - include:
-      file: db/changelog/006-create-reminder-scheduler.yaml
-
-  - include:
-      file: db/changelog/007-create-stock-module.yaml
-
-  - include:
-      file: db/changelog/008-create-backup-record.yaml
-
-  - include:
-      file: db/changelog/009-add-stock-market-map-fields.yaml
-
-  - include:
-      file: db/changelog/010-create-gold-module.yaml
-
-  - include:
-      file: db/changelog/011-create-devlog-module.yaml
-
-  - include:
-      file: db/changelog/012-create-stock-fund-flow.yaml
-
-  - include:
-      file: db/changelog/013-create-finance-and-report.yaml
-
-  - include:
-      file: db/changelog/014-create-inbox-search-indexes.yaml
-
-  - include:
-      file: db/changelog/015-extend-inbox-attachments.yaml
-
-  - include:
-      file: db/changelog/016-create-blog-module.yaml
-
-  - include:
-      file: db/changelog/017-add-blog-site.yaml
-
-  - include:
-      file: db/changelog/018-create-trading-review.yaml
+  - include: { file: db/changelog/001-create-user-account.yaml }
+  - include: { file: db/changelog/002-create-quick-note.yaml }
+  - include: { file: db/changelog/003-create-quartz-tables.yaml }
+  - include: { file: db/changelog/004-create-task-module.yaml }
+  - include: { file: db/changelog/005-create-learning-module.yaml }
+  - include: { file: db/changelog/006-create-reminder-scheduler.yaml }
+  - include: { file: db/changelog/007-create-stock-module.yaml }
+  - include: { file: db/changelog/008-create-backup-record.yaml }
+  - include: { file: db/changelog/009-add-stock-market-map-fields.yaml }
+  - include: { file: db/changelog/010-create-gold-module.yaml }
+  - include: { file: db/changelog/011-create-devlog-module.yaml }
+  - include: { file: db/changelog/012-create-stock-fund-flow.yaml }
+  - include: { file: db/changelog/013-create-finance-and-report.yaml }
+  - include: { file: db/changelog/014-create-inbox-search-indexes.yaml }
+  - include: { file: db/changelog/015-extend-inbox-attachments.yaml }
+  - include: { file: db/changelog/016-create-blog-module.yaml }
+  - include: { file: db/changelog/017-add-blog-site.yaml }
+  - include: { file: db/changelog/018-create-trading-review.yaml }
+  - include: { file: db/changelog/019-create-calendar-center.yaml }
+  - include: { file: db/changelog/020-extend-inbox-conversion.yaml }
+  - include: { file: db/changelog/021-create-security-audit.yaml }
+  - include: { file: db/changelog/022-create-automation-center.yaml }

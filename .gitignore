@@ -7,7 +7,9 @@ deploy/.env
 personal-assistant-web/node_modules/
 personal-assistant-web/dist/
 personal-assistant-web/*.tsbuildinfo
+personal-assistant-web/src/calendar-react-compat.d.ts
 
 personal-assistant-server/target/
 personal-assistant-server/logs/
 *.log
+.codex-write-probe

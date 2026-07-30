@@ -20,13 +20,45 @@ class PublicGoldQuoteServiceTest {
             context.registerBean(ObjectMapper.class);
             context.register(PublicGoldQuoteService.class);
             context.refresh();
-
             assertTrue(context.getBean(PublicGoldQuoteService.class) != null);
         }
     }
+
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     void convertsUsdPerOunceToCnyPerGram() {
+        RestClient client = clientReturning(
+                "{\"price\":3000,\"updatedAt\":\"2026-07-30T01:00:00Z\"}",
+                "{\"rates\":{\"CNY\":7.2}}"
+        );
+
+        var result = new PublicGoldQuoteService(new ObjectMapper(), client, "").latest();
+
+        assertEquals(2, result.quotes().size());
+        assertEquals(new BigDecimal("7.2000"), result.usdCny());
+        assertEquals(new BigDecimal("694.4561"), result.quotes().get(1).price());
+        assertTrue(result.quotes().get(1).converted());
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void appendsJewelryGoldPrices() {
+        RestClient client = clientReturning(
+                "{\"price\":3000}",
+                "{\"rates\":{\"CNY\":7.2}}",
+                "{\"data\":{\"gold_prices\":[{\"brand\":\"周大福\",\"gold_price\":\"1025\",\"unit\":\"元/克\",\"update_date\":\"2026-07-30\"}]}}"
+        );
+
+        var result = new PublicGoldQuoteService(new ObjectMapper(), client, "test-key").latest();
+
+        assertEquals(3, result.quotes().size());
+        assertEquals("JEWELRY_周大福", result.quotes().get(2).code());
+        assertEquals(new BigDecimal("1025"), result.quotes().get(2).price());
+        assertTrue(result.source().contains("应天API"));
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private RestClient clientReturning(String... bodies) {
         RestClient client = mock(RestClient.class);
         RestClient.RequestHeadersUriSpec request = mock(RestClient.RequestHeadersUriSpec.class);
         RestClient.RequestHeadersSpec headers = mock(RestClient.RequestHeadersSpec.class);
@@ -34,16 +66,7 @@ class PublicGoldQuoteServiceTest {
         when(client.get()).thenReturn(request);
         when(request.uri(anyString())).thenReturn(headers);
         when(headers.retrieve()).thenReturn(response);
-        when(response.body(String.class)).thenReturn(
-                "{\"price\":3000,\"updatedAt\":\"2026-07-30T01:00:00Z\"}",
-                "{\"rates\":{\"CNY\":7.2}}"
-        );
-
-        var result = new PublicGoldQuoteService(new ObjectMapper(), client).latest();
-
-        assertEquals(2, result.quotes().size());
-        assertEquals(new BigDecimal("7.2000"), result.usdCny());
-        assertEquals(new BigDecimal("694.4561"), result.quotes().get(1).price());
-        assertTrue(result.quotes().get(1).converted());
+        when(response.body(String.class)).thenReturn(bodies[0], java.util.Arrays.copyOfRange(bodies, 1, bodies.length));
+        return client;
     }
 }

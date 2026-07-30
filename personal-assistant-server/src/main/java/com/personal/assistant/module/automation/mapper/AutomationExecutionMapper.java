@@ -1,0 +1,1 @@
+package com.personal.assistant.module.automation.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.automation.entity.AutomationExecution;import org.apache.ibatis.annotations.Mapper;@Mapper public interface AutomationExecutionMapper extends BaseMapper<AutomationExecution>{}

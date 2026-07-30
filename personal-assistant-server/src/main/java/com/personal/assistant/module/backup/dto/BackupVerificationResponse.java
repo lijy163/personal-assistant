@@ -1,0 +1,1 @@
+package com.personal.assistant.module.backup.dto;import java.time.LocalDateTime;public record BackupVerificationResponse(Long backupId,String status,String sha256,Long actualSize,LocalDateTime verifiedAt,String message,String recoveryNotice){}

@@ -1,0 +1,2 @@
+package com.personal.assistant.module.security.entity;import com.baomidou.mybatisplus.annotation.*;import lombok.Data;import java.time.LocalDateTime;
+@Data @TableName("security_audit_log") public class SecurityAuditLog{@TableId(type=IdType.AUTO)private Long id;private Long userId;private String username;private String operation;private String resourceType;private String resourceId;private String result;private String ipAddress;private String userAgent;private String failureReason;private LocalDateTime occurredAt;}

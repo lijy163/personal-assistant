@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-extend-inbox-conversion
+      author: codex
+      changes:
+        - addColumn:
+            tableName: inbox_item
+            columns:
+              - column: { name: converted_type, type: varchar(30) }
+              - column: { name: converted_id, type: bigint }
+              - column: { name: converted_at, type: timestamp }
+              - column: { name: conversion_params, type: text }
+              - column: { name: conversion_version, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - createIndex: { tableName: inbox_item, indexName: idx_inbox_converted_target, columns: [ { column: { name: user_id } }, { column: { name: converted_type } }, { column: { name: converted_id } } ] }
