@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">Gold Watch</p>
         <h2>金价关注</h2>
-        <p>覆盖伦敦金、国内金价、银行/平台报价金、品牌首饰金价。第一版支持手动维护与可配置接口刷新。</p>
+        <p>国际现货黄金无需配置即可实时刷新，并自动折算人民币/克；品牌与银行报价可继续使用自定义关注项。</p>
       </div>
       <div class="hero-actions">
         <el-select v-model="dashboardFilter.goldType" clearable placeholder="全部类型" style="width: 160px" @change="reloadDashboard">
@@ -15,6 +15,22 @@
       </div>
     </section>
 
+    <section class="public-quotes">
+      <div class="public-heading">
+        <div><span class="live-dot"></span><b>免配置实时行情</b><small>数据每 60 秒自动刷新 · 下次刷新 {{ publicCountdown }} 秒</small></div>
+        <el-button :loading="publicLoading" @click="loadPublicQuotes(true)">立即刷新</el-button>
+      </div>
+      <el-alert v-if="publicError" :title="publicError" type="warning" :closable="false" show-icon />
+      <div class="public-card-grid" v-loading="publicLoading">
+        <article v-for="quote in publicQuotes?.quotes || []" :key="quote.code" class="public-card">
+          <small>{{ quote.converted ? '实时折算参考' : '国际市场现货' }}</small>
+          <h3>{{ quote.displayName }}</h3>
+          <div><strong>{{ formatNumber(quote.price, quote.converted ? 4 : 2) }}</strong><span>{{ quote.unit }}</span></div>
+          <p>{{ quote.description }}</p>
+        </article>
+      </div>
+      <footer v-if="publicQuotes"><span>行情时间 {{ formatTime(publicQuotes.quoteTime) }}</span><span>USD/CNY {{ formatNumber(publicQuotes.usdCny, 4) }}</span><span>来源 {{ publicQuotes.source }}</span></footer>
+    </section>
     <div class="status-grid">
       <div class="status-card"><small>关注项</small><b>{{ quoteStatus?.watchCount || 0 }}</b><span>已配置金价</span></div>
       <div class="status-card"><small>已有行情</small><b>{{ quoteStatus?.quotedCount || 0 }}</b><span>有最新价和时间</span></div>
@@ -151,10 +167,11 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
-import { onMounted, reactive, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import {
   collectGold,
   getGoldQuoteStatus,
+  getGoldPublicQuotes,
   listGoldApiConfigs,
   listGoldCollectionResults,
   listGoldWatchItems,
@@ -168,6 +185,7 @@ import {
   type GoldApiConfig,
   type GoldCollectionResult,
   type GoldQuoteStatusResponse,
+  type GoldPublicQuoteResponse,
   type GoldWatchItem,
   type GoldWatchPayload,
 } from '@/api/gold';
@@ -187,6 +205,11 @@ const results = ref<GoldCollectionResult[]>([]);
 const quoteStatus = ref<GoldQuoteStatusResponse>();
 const loading = ref(false);
 const refreshing = ref(false);
+const publicQuotes = ref<GoldPublicQuoteResponse>();
+const publicLoading = ref(false);
+const publicError = ref('');
+const publicCountdown = ref(60);
+let publicTimer: number | undefined;
 const watchVisible = ref(false);
 const configVisible = ref(false);
 const editing = ref<number>();
@@ -204,6 +227,24 @@ async function reloadDashboard() { await Promise.all([loadDashboard(), loadQuote
 async function loadConfigs() { configs.value = (await listGoldApiConfigs()).data; }
 async function loadResults() { results.value = (await listGoldCollectionResults()).data; }
 
+async function loadPublicQuotes(showMessage = false) {
+  publicLoading.value = true;
+  try {
+    publicQuotes.value = (await getGoldPublicQuotes()).data;
+    publicError.value = '';
+    publicCountdown.value = publicQuotes.value.refreshIntervalSeconds || 60;
+    if (showMessage) ElMessage.success('实时金价已刷新');
+  } catch (error) {
+    publicError.value = '公开行情源暂时不可用，已保留页面上的最近一次结果，请稍后重试。';
+  } finally { publicLoading.value = false; }
+}
+
+function startPublicRefresh() {
+  publicTimer = window.setInterval(() => {
+    publicCountdown.value -= 1;
+    if (publicCountdown.value <= 0) void loadPublicQuotes();
+  }, 1000);
+}
 async function refreshQuotes() {
   refreshing.value = true;
   try {
@@ -229,7 +270,8 @@ function formatChange(amount?: number | null, percent?: number | null) { const a
 function formatNumber(value?: number | null, digits = 2) { if (value == null) return '-'; return Number(value).toFixed(digits); }
 function formatTime(value?: string | null) { return value ? new Date(value).toLocaleString('zh-CN') : '-'; }
 watch(() => filters.goldType, value => { if (value) dashboardFilter.goldType = value; });
-onMounted(async () => { await Promise.all([reloadDashboard(), loadConfigs()]); });
+onMounted(async () => { await Promise.all([loadPublicQuotes(), reloadDashboard(), loadConfigs()]); startPublicRefresh(); });
+onBeforeUnmount(() => { if (publicTimer) window.clearInterval(publicTimer); });
 </script>
 
 <style scoped>
@@ -239,7 +281,18 @@ onMounted(async () => { await Promise.all([reloadDashboard(), loadConfigs()]); }
 .gold-hero p { margin: 0; color: rgba(255,255,255,.82); }
 .eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: 12px; }
 .hero-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; align-items: center; }
-.status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.public-quotes { padding: 20px; border-radius: 22px; background: #fff; box-shadow: 0 12px 32px rgba(35,24,10,.08); }
+.public-heading, .public-heading > div, .public-quotes > footer { display: flex; align-items: center; gap: 12px; }
+.public-heading { justify-content: space-between; margin-bottom: 16px; }
+.public-heading small, .public-quotes > footer { color: #8a7a64; }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,.13); }
+.public-card-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; min-height: 150px; }
+.public-card { padding: 20px; border: 1px solid rgba(214,158,46,.22); border-radius: 18px; background: linear-gradient(135deg,#fffaf0,#fff); }
+.public-card small, .public-card p { color: #8a7a64; }
+.public-card h3 { margin: 7px 0 13px; }
+.public-card strong { margin-right: 8px; font-size: 32px; color: #b45309; }
+.public-card p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; }
+.public-quotes > footer { justify-content: flex-end; margin-top: 14px; font-size: 12px; }.status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .status-card { padding: 18px; border-radius: 18px; background: #fff; box-shadow: 0 12px 32px rgba(35, 24, 10, .08); }
 .status-card small, .quote-card small { color: #8a7a64; }
 .status-card b { display: block; margin: 8px 0 4px; font-size: 24px; color: #2f2519; }
@@ -267,5 +320,5 @@ onMounted(async () => { await Promise.all([reloadDashboard(), loadConfigs()]); }
 .gold-type-domestic-gold { background: linear-gradient(180deg, #fefce8, #fff); }
 .gold-type-brand-jewelry { background: linear-gradient(180deg, #fff1f2, #fff); }
 .gold-type-platform-gold { background: linear-gradient(180deg, #eff6ff, #fff); }
-@media (max-width: 960px) { .gold-hero { flex-direction: column; align-items: flex-start; } .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 960px) { .public-card-grid { grid-template-columns: 1fr; } .public-heading, .public-quotes > footer { align-items: flex-start; flex-direction: column; } .gold-hero { flex-direction: column; align-items: flex-start; } .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

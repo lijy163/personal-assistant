@@ -5,11 +5,13 @@ import com.personal.assistant.common.security.SecurityContextHelper;
 import com.personal.assistant.module.gold.dto.GoldApiConfigRequest;
 import com.personal.assistant.module.gold.dto.GoldApiConfigResponse;
 import com.personal.assistant.module.gold.dto.GoldQuoteRefreshResponse;
+import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
 import com.personal.assistant.module.gold.dto.GoldQuoteStatusResponse;
 import com.personal.assistant.module.gold.dto.GoldWatchRequest;
 import com.personal.assistant.module.gold.entity.GoldCollectionResult;
 import com.personal.assistant.module.gold.entity.GoldWatchItem;
 import com.personal.assistant.module.gold.service.GoldService;
+import com.personal.assistant.module.gold.service.PublicGoldQuoteService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,9 +29,11 @@ import java.util.List;
 @RequestMapping("/api/gold")
 public class GoldController {
     private final GoldService service;
+    private final PublicGoldQuoteService publicQuoteService;
 
-    public GoldController(GoldService service) {
+    public GoldController(GoldService service, PublicGoldQuoteService publicQuoteService) {
         this.service = service;
+        this.publicQuoteService = publicQuoteService;
     }
 
     private Long uid() {
@@ -82,6 +86,11 @@ public class GoldController {
     @GetMapping("/collection-results")
     public ApiResponse<List<GoldCollectionResult>> results(@RequestParam(required = false) Long watchId) {
         return ApiResponse.success(service.listResults(uid(), watchId));
+    }
+
+    @GetMapping("/public-quotes")
+    public ApiResponse<GoldPublicQuoteResponse> publicQuotes() {
+        return ApiResponse.success(publicQuoteService.latest());
     }
 
     @PostMapping("/quotes/refresh")

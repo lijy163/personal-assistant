@@ -92,6 +92,23 @@ export interface GoldQuoteStatusResponse {
   recentFailures: GoldQuoteFailure[];
 }
 
+export interface GoldPublicQuote {
+  code: string;
+  displayName: string;
+  price: number;
+  unit: string;
+  description: string;
+  converted: boolean;
+}
+
+export interface GoldPublicQuoteResponse {
+  quotes: GoldPublicQuote[];
+  usdCny: number;
+  quoteTime: string;
+  fetchedAt: string;
+  source: string;
+  refreshIntervalSeconds: number;
+}
 export const listGoldWatchItems = (params: Record<string, unknown> = {}) =>
   http.get<unknown, { data: GoldWatchItem[] }>('/gold/watch-items', { params });
 
@@ -120,3 +137,6 @@ export const refreshGoldQuotes = (params: { goldType?: string; enabledOnly?: boo
 
 export const getGoldQuoteStatus = (params: { goldType?: string; enabledOnly?: boolean } = {}) =>
   http.get<unknown, { data: GoldQuoteStatusResponse }>('/gold/quotes/status', { params });
+
+export const getGoldPublicQuotes = () =>
+  http.get<unknown, { data: GoldPublicQuoteResponse }>('/gold/public-quotes');
