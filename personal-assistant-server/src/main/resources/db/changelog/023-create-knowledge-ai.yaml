@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-create-knowledge-ai
+      author: codex
+      changes:
+        - createTable:
+            tableName: knowledge_entry
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: source_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: source_id, type: bigint }
+              - column: { name: title, type: varchar(240), constraints: { nullable: false } }
+              - column: { name: markdown_content, type: text }
+              - column: { name: tags, type: varchar(1000) }
+              - column: { name: project_name, type: varchar(160) }
+              - column: { name: topic, type: varchar(160) }
+              - column: { name: review_at, type: timestamp }
+              - column: { name: review_interval_days, type: int, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: review_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: archived, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: knowledge_entry, columnNames: user_id, source_type, source_id, constraintName: uk_knowledge_source }
+        - createIndex: { tableName: knowledge_entry, indexName: idx_knowledge_search, columns: [ { column: { name: user_id } }, { column: { name: topic } }, { column: { name: review_at } } ] }
+        - createTable:
+            tableName: knowledge_link
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: source_entry_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: target_entry_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: link_type, type: varchar(30), defaultValue: RELATED, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: knowledge_link, columnNames: user_id, source_entry_id, target_entry_id, constraintName: uk_knowledge_link }
+        - createTable:
+            tableName: ai_provider_config
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: provider_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: base_url, type: varchar(500) }
+              - column: { name: model_name, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: api_key_encrypted, type: text, constraints: { nullable: false } }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createTable:
+            tableName: ai_invocation
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: provider_config_id, type: bigint }
+              - column: { name: scene, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: source_type, type: varchar(30) }
+              - column: { name: source_id, type: bigint }
+              - column: { name: model_name, type: varchar(120) }
+              - column: { name: prompt_version, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: redacted_input, type: text, constraints: { nullable: false } }
+              - column: { name: result_content, type: text }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: confirmed, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: failure_reason, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: confirmed_at, type: timestamp }
+        - createIndex: { tableName: ai_invocation, indexName: idx_ai_invocation_user_time, columns: [ { column: { name: user_id } }, { column: { name: created_at, descending: true } } ] }

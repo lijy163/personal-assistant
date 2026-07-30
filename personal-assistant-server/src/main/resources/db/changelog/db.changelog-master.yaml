@@ -21,3 +21,7 @@ databaseChangeLog:
   - include: { file: db/changelog/020-extend-inbox-conversion.yaml }
   - include: { file: db/changelog/021-create-security-audit.yaml }
   - include: { file: db/changelog/022-create-automation-center.yaml }
+  - include: { file: db/changelog/023-create-knowledge-ai.yaml }
+  - include: { file: db/changelog/024-create-finance-planning.yaml }
+  - include: { file: db/changelog/025-create-life-management.yaml }
+  - include: { file: db/changelog/026-create-finance-import-template.yaml }

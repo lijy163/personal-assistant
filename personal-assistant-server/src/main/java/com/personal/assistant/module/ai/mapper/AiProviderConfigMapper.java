@@ -1,0 +1,1 @@
+package com.personal.assistant.module.ai.mapper;import com.baomidou.mybatisplus.core.mapper.BaseMapper;import com.personal.assistant.module.ai.entity.AiProviderConfig;import org.apache.ibatis.annotations.Mapper;@Mapper public interface AiProviderConfigMapper extends BaseMapper<AiProviderConfig>{}

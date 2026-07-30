@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-create-finance-import-template
+      author: codex
+      changes:
+        - createTable:
+            tableName: finance_import_template
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: name, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: platform, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: mapping_json, type: text, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: finance_import_template, columnNames: user_id, name, constraintName: uk_finance_import_template_name }

@@ -1,0 +1,1 @@
+package com.personal.assistant.module.knowledge.dto;import jakarta.validation.constraints.*;import java.time.LocalDateTime;public record KnowledgeRequest(@NotBlank @Size(max=240)String title,String markdownContent,String tags,String projectName,String topic,LocalDateTime reviewAt,Integer reviewIntervalDays){}

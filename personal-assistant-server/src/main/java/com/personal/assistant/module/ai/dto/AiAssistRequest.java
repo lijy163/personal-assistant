@@ -1,0 +1,1 @@
+package com.personal.assistant.module.ai.dto;import jakarta.validation.constraints.*;public record AiAssistRequest(@NotBlank String scene,String sourceType,Long sourceId,@NotBlank @Size(max=20000)String input){}

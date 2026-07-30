@@ -1,0 +1,1 @@
+package com.personal.assistant.module.ai.dto;import jakarta.validation.constraints.*;public record AiConfigRequest(@NotBlank String providerType,String baseUrl,@NotBlank String modelName,@NotBlank String apiKey,Boolean enabled){}

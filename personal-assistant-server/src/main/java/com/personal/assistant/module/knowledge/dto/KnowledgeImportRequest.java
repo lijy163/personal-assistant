@@ -1,0 +1,1 @@
+package com.personal.assistant.module.knowledge.dto;import jakarta.validation.constraints.*;public record KnowledgeImportRequest(@NotBlank String sourceType,@NotNull Long sourceId,String tags,String topic){}

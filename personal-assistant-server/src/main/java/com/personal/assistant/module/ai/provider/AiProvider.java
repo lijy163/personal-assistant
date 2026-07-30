@@ -1,0 +1,1 @@
+package com.personal.assistant.module.ai.provider;import com.personal.assistant.module.ai.entity.AiProviderConfig;public interface AiProvider{String type();String complete(AiProviderConfig config,String apiKey,String systemPrompt,String input);}

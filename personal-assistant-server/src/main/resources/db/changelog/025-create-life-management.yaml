@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-create-life-management
+      author: codex
+      changes:
+        - createTable:
+            tableName: habit
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: name, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: frequency, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: target_count, type: int, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: metric_type, type: varchar(30) }
+              - column: { name: target_value, type: "numeric(12,2)" }
+              - column: { name: unit, type: varchar(30) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: reminder_id, type: bigint }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createTable:
+            tableName: habit_checkin
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: habit_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: checkin_date, type: date, constraints: { nullable: false } }
+              - column: { name: value, type: "numeric(12,2)" }
+              - column: { name: note, type: text }
+              - column: { name: source, type: varchar(30), defaultValue: MANUAL, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: habit_checkin, columnNames: user_id, habit_id, checkin_date, constraintName: uk_habit_checkin_date }
+        - createTable:
+            tableName: contact
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: name, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: relationship, type: varchar(80) }
+              - column: { name: company, type: varchar(160) }
+              - column: { name: birthday, type: date }
+              - column: { name: anniversary, type: date }
+              - column: { name: last_contact_at, type: timestamp }
+              - column: { name: preferences, type: text }
+              - column: { name: follow_up_at, type: timestamp }
+              - column: { name: reminder_id, type: bigint }
+              - column: { name: note, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex: { tableName: contact, indexName: idx_contact_user_followup, columns: [ { column: { name: user_id } }, { column: { name: follow_up_at } } ] }
+        - createTable:
+            tableName: household_asset
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: asset_type, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: name, type: varchar(160), constraints: { nullable: false } }
+              - column: { name: purchase_date, type: date }
+              - column: { name: purchase_amount, type: "numeric(18,2)" }
+              - column: { name: warranty_until, type: date }
+              - column: { name: expires_at, type: date }
+              - column: { name: location, type: varchar(255) }
+              - column: { name: sensitive, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: encrypted_details, type: text }
+              - column: { name: reminder_id, type: bigint }
+              - column: { name: note, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex: { tableName: household_asset, indexName: idx_household_asset_user_expiry, columns: [ { column: { name: user_id } }, { column: { name: expires_at } } ] }
