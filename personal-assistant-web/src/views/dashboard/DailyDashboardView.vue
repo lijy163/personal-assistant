@@ -43,6 +43,7 @@ const data = ref<DailyDashboard>();
 const goldQuotes = ref<GoldPublicQuoteResponse>();
 const goldLoading = ref(false);
 const goldError = ref(false);
+const dashboardJewelryBrands = new Set(['周大福', '老庙']);
 const cards = computed(() => [
   { label: '今日任务', value: data.value?.todayTaskCount || 0, help: '计划在今天完成', route: '/life', type: '' },
   { label: '逾期任务', value: data.value?.overdueTaskCount || 0, help: '需要重新安排', route: '/work', type: 'warning' },
@@ -55,7 +56,10 @@ const cards = computed(() => [
 ]);
 const displayedGoldQuotes = computed(() => {
   const quotes = goldQuotes.value?.quotes || [];
-  return [...quotes.filter(quote => !isJewelry(quote)), ...quotes.filter(isJewelry).slice(0, 6)];
+  const dashboardJewelryQuotes = quotes.filter(quote =>
+    isJewelry(quote) && dashboardJewelryBrands.has(quote.code.slice('JEWELRY_'.length)),
+  );
+  return [...quotes.filter(quote => !isJewelry(quote)), ...dashboardJewelryQuotes];
 });
 const money = (value?: number) => Number(value || 0).toFixed(2);
 const goldPrice = (value: number, converted: boolean) => value.toFixed(converted ? 4 : 2);

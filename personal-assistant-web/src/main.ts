@@ -7,6 +7,7 @@ import router from './router';
 import { scheduleRoutePreload } from './router/routePreload';
 import './styles/global.css';
 import './styles/performance.css';
+import './styles/calendarFit.css';
 
 const app = createApp(App);
 

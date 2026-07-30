@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-create-gold-price-alert-state
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: gold_price_alert_state
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: alert_key, type: varchar(50), constraints: { nullable: false } }
+              - column: { name: below_threshold, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: last_price, type: numeric(18,4) }
+              - column: { name: last_notified_at, type: timestamp }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: gold_price_alert_state
+            columnNames: user_id, alert_key
+            constraintName: uk_gold_price_alert_user_key

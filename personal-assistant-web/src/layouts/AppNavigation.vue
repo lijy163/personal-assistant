@@ -16,6 +16,8 @@
       <el-sub-menu index="knowledge">
         <template #title><el-icon><Reading /></el-icon><span>知识沉淀</span></template>
         <el-menu-item index="/knowledge">个人知识库与 AI</el-menu-item><el-menu-item index="/learning/plans">学习计划</el-menu-item><el-menu-item index="/learning/records">学习记录</el-menu-item><el-menu-item index="/learning/summaries">学习总结</el-menu-item><el-menu-item index="/learning/growth">成长看板</el-menu-item><el-menu-item index="/devlogs">开发记录</el-menu-item><el-menu-item index="/blog/manage">博客管理</el-menu-item>
+        <a class="external-menu-item" href="/blog" target="_blank" rel="noopener">访问工作记录 ↗</a>
+        <a class="external-menu-item" href="/rain7/" target="_blank" rel="noopener">访问 Rain7 ↗</a>
       </el-sub-menu>
       <el-sub-menu index="finance">
         <template #title><el-icon><TrendCharts /></el-icon><span>财务市场</span></template>
@@ -41,7 +43,7 @@ const router = useRouter();
 const groupRoutes: Record<string, string[]> = {
   home: ['/dashboard', '/inbox', '/inbox/organize'],
   tasks: ['/calendar', '/life', '/work', '/reminders', '/automation', '/life-management'],
-  knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage'],
+  knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage', '/blog'],
   finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/gold', '/reports'],
   system: ['/security-audit', '/scheduler', '/devlog-tokens', '/system', '/operations'],
 };
@@ -64,5 +66,5 @@ onMounted(() => preloadRoutes(router, groupRoutes[group.value]));
 </script>
 
 <style scoped>
-.nav-wrap{height:100%;overflow-y:auto}.sidebar-menu :deep(.el-sub-menu__title){font-weight:750}.sidebar-menu :deep(.el-sub-menu__title .el-icon){color:#64748b}.sidebar-menu :deep(.el-menu-item){font-size:13px}
+.nav-wrap{height:100%;overflow-y:auto}.sidebar-menu :deep(.el-sub-menu__title){font-weight:750}.sidebar-menu :deep(.el-sub-menu__title .el-icon){color:#64748b}.sidebar-menu :deep(.el-menu-item){font-size:13px}.external-menu-item{display:flex;align-items:center;height:44px;padding:0 20px 0 54px;margin:5px 0;color:#516072;font-size:13px;text-decoration:none;border-radius:14px}.external-menu-item:hover{color:#2563eb;background:rgb(37 99 235 / 8%)}
 </style>
