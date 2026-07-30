@@ -102,14 +102,27 @@ export interface GoldPublicQuote {
 }
 
 export interface GoldPriceAlertRule {
+  id: number;
   alertKey: string;
   title: string;
+  quoteType: 'MARKET' | 'JEWELRY';
+  threshold: number;
+  brandNames: string | null;
+  enabled: boolean;
   condition: string;
-  status: 'MONITORING' | 'TRIGGERED' | 'NO_CHANNEL';
+  status: 'MONITORING' | 'TRIGGERED' | 'NO_CHANNEL' | 'DISABLED';
   lastPrice: number | null;
   lastNotifiedAt: string | null;
   channelConfigured: boolean;
   checkInterval: string;
+}
+
+export interface GoldPriceAlertRulePayload {
+  title: string;
+  quoteType: 'MARKET' | 'JEWELRY';
+  threshold: number;
+  brandNames: string | null;
+  enabled: boolean;
 }
 export interface GoldPublicQuoteResponse {
   quotes: GoldPublicQuote[];
@@ -154,5 +167,9 @@ export const getGoldQuoteStatus = (params: { goldType?: string; enabledOnly?: bo
 export const listGoldPriceAlertRules = () =>
   http.get<unknown, { data: GoldPriceAlertRule[] }>('/gold/alert-rules');
 
+export const saveGoldPriceAlertRule = (data: GoldPriceAlertRulePayload) => http.post('/gold/alert-rules', data);
+export const updateGoldPriceAlertRule = (id: number, data: GoldPriceAlertRulePayload) => http.put(`/gold/alert-rules/${id}`, data);
+export const toggleGoldPriceAlertRule = (id: number, enabled: boolean) => http.patch(`/gold/alert-rules/${id}/enabled`, null, { params: { enabled } });
+export const deleteGoldPriceAlertRule = (id: number) => http.delete(`/gold/alert-rules/${id}`);
 export const getGoldPublicQuotes = () =>
   http.get<unknown, { data: GoldPublicQuoteResponse }>('/gold/public-quotes');

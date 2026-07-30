@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-create-gold-price-alert-rule
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: gold_price_alert_rule
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: alert_key, type: varchar(80), constraints: { nullable: false } }
+              - column: { name: title, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: quote_type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: threshold, type: "numeric(18,4)", constraints: { nullable: false } }
+              - column: { name: brand_names, type: varchar(500) }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: gold_price_alert_rule
+            columnNames: user_id, alert_key
+            constraintName: uk_gold_price_alert_rule_user_key
+        - sql:
+            sql: >-
+              insert into gold_price_alert_rule(user_id, alert_key, title, quote_type, threshold, brand_names, enabled, created_at, updated_at)
+              select id, 'MARKET_800', '实时金价跌破 800 元/克', 'MARKET', 800, null, true, now(), now() from user_account
+              union all
+              select id, 'JEWELRY_1000', '首饰金价跌破 1000 元/克', 'JEWELRY', 1000, '周大福,老庙', true, now(), now() from user_account
+              union all
+              select id, 'JEWELRY_900', '首饰金价跌破 900 元/克', 'JEWELRY', 900, '周大福,老庙', true, now(), now() from user_account

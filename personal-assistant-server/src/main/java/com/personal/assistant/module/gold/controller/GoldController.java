@@ -4,6 +4,7 @@ import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.SecurityContextHelper;
 import com.personal.assistant.module.gold.dto.GoldApiConfigRequest;
 import com.personal.assistant.module.gold.dto.GoldApiConfigResponse;
+import com.personal.assistant.module.gold.dto.GoldPriceAlertRuleRequest;
 import com.personal.assistant.module.gold.dto.GoldPriceAlertRuleResponse;
 import com.personal.assistant.module.gold.dto.GoldQuoteRefreshResponse;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
@@ -101,6 +102,28 @@ public class GoldController {
     @GetMapping("/alert-rules")
     public ApiResponse<List<GoldPriceAlertRuleResponse>> alertRules() {
         return ApiResponse.success(alertService.listRules(uid()));
+    }
+    @PostMapping("/alert-rules")
+    public ApiResponse<Long> saveAlertRule(@Valid @RequestBody GoldPriceAlertRuleRequest request) {
+        return ApiResponse.success(alertService.saveRule(uid(), null, request));
+    }
+
+    @PutMapping("/alert-rules/{id}")
+    public ApiResponse<Long> saveAlertRule(@PathVariable Long id,
+                                           @Valid @RequestBody GoldPriceAlertRuleRequest request) {
+        return ApiResponse.success(alertService.saveRule(uid(), id, request));
+    }
+
+    @PatchMapping("/alert-rules/{id}/enabled")
+    public ApiResponse<Void> toggleAlertRule(@PathVariable Long id, @RequestParam boolean enabled) {
+        alertService.toggleRule(uid(), id, enabled);
+        return ApiResponse.success();
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/alert-rules/{id}")
+    public ApiResponse<Void> deleteAlertRule(@PathVariable Long id) {
+        alertService.deleteRule(uid(), id);
+        return ApiResponse.success();
     }
     @PostMapping("/quotes/refresh")
     public ApiResponse<GoldQuoteRefreshResponse> refreshQuotes(@RequestParam(required = false) String goldType,

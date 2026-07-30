@@ -1,7 +1,10 @@
 package com.personal.assistant.module.gold.service;
 
+import com.personal.assistant.module.gold.dto.GoldPriceAlertRuleRequest;
 import com.personal.assistant.module.gold.dto.GoldPublicQuoteResponse;
+import com.personal.assistant.module.gold.entity.GoldPriceAlertRule;
 import com.personal.assistant.module.gold.entity.GoldPriceAlertState;
+import com.personal.assistant.module.gold.mapper.GoldPriceAlertRuleMapper;
 import com.personal.assistant.module.gold.mapper.GoldPriceAlertStateMapper;
 import com.personal.assistant.module.reminder.entity.NotificationChannel;
 import com.personal.assistant.module.reminder.mapper.NotificationChannelMapper;
@@ -16,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -27,6 +31,7 @@ import static org.mockito.Mockito.when;
 class GoldPriceAlertServiceTest {
     @Mock private PublicGoldQuoteService quotes;
     @Mock private NotificationChannelMapper channels;
+    @Mock private GoldPriceAlertRuleMapper rules;
     @Mock private GoldPriceAlertStateMapper states;
     @Mock private NotificationService notifications;
 
@@ -35,7 +40,7 @@ class GoldPriceAlertServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new GoldPriceAlertService(quotes, channels, states, notifications);
+        service = new GoldPriceAlertService(quotes, channels, rules, states, notifications);
         channel = new NotificationChannel();
         channel.setId(7L);
         channel.setUserId(3L);
@@ -43,7 +48,12 @@ class GoldPriceAlertServiceTest {
     }
 
     @Test
-    void sendsThreeIndependentAlertsWhenAllThresholdsAreCrossed() {
+    void sendsThreeIndependentAlertsFromDatabaseRules() {
+        when(rules.selectList(any())).thenReturn(List.of(
+                rule("MARKET_800", "MARKET", "800", null),
+                rule("JEWELRY_1000", "JEWELRY", "1000", "周大福,老庙"),
+                rule("JEWELRY_900", "JEWELRY", "900", "周大福,老庙")
+        ));
         when(states.selectOne(any())).thenReturn(null);
 
         service.scanUser(3L, channel, response(
@@ -70,16 +80,41 @@ class GoldPriceAlertServiceTest {
     }
 
     @Test
-    void ignoresJewelryBrandsNotShownOnDashboard() {
-        when(states.selectOne(any())).thenReturn(null);
+    void matchesOnlyBrandsStoredOnJewelryRule() {
+        when(rules.selectList(any())).thenReturn(List.of(rule("JEWELRY_900", "JEWELRY", "900", "周大福,老庙")));
 
-        service.scanUser(3L, channel, response(
-                quote("XAU_CNY_GRAM", "810"),
-                quote("JEWELRY_君佩", "850")
-        ));
+        service.scanUser(3L, channel, response(quote("JEWELRY_君佩", "850")));
 
         verify(notifications, never()).send(any(), any(), any(), any(), any());
-        verify(states, times(1)).insert(any(GoldPriceAlertState.class));
+        verify(states, never()).insert(any(GoldPriceAlertState.class));
+    }
+
+    @Test
+    void savesEditableRuleAndResetsPreviousState() {
+        GoldPriceAlertRule existing = rule("JEWELRY_1000", "JEWELRY", "1000", "周大福,老庙");
+        existing.setId(9L);
+        when(rules.selectById(9L)).thenReturn(existing);
+
+        Long id = service.saveRule(3L, 9L,
+                new GoldPriceAlertRuleRequest("首饰金跌破 950", "JEWELRY", decimal("950"), "周大福", true));
+
+        assertEquals(9L, id);
+        assertEquals(decimal("950"), existing.getThreshold());
+        assertEquals("周大福", existing.getBrandNames());
+        verify(rules).updateById(existing);
+        verify(states).delete(any());
+    }
+
+    private GoldPriceAlertRule rule(String key, String type, String threshold, String brands) {
+        GoldPriceAlertRule rule = new GoldPriceAlertRule();
+        rule.setUserId(3L);
+        rule.setAlertKey(key);
+        rule.setTitle(key);
+        rule.setQuoteType(type);
+        rule.setThreshold(decimal(threshold));
+        rule.setBrandNames(brands);
+        rule.setEnabled(true);
+        return rule;
     }
 
     private GoldPriceAlertState state(boolean below) {
