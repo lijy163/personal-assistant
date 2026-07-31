@@ -36,6 +36,7 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
     private static final String INDEX_URL = BASE + "/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001,0.399006&fields=f3,f6,f104,f105,f106";
     private static final String SECTOR_URL = BASE + "/api/qt/clist/get?pn=1&pz=500&po=%d&np=1&fltt=2&invt=2&fid=%s&fs=m:90+t:2&fields=f12,f14,f3,f6,f104,f105,f106,f128,f136";
     private static final Set<String> PRIMARY_INDUSTRIES = Set.of("农林牧渔","基础化工","钢铁","有色金属","电子","汽车","家用电器","食品饮料","纺织服饰","轻工制造","医药生物","公用事业","交通运输","房地产","商贸零售","社会服务","综合","建筑材料","建筑装饰","电力设备","国防军工","计算机","传媒","通信","银行","非银金融","美容护理","煤炭","石油石化","环保","机械设备");
+    private static final Set<String> SECONDARY_INDUSTRIES = Set.of("\u534a\u5bfc\u4f53","\u5143\u4ef6","\u5149\u5b66\u5149\u7535\u5b50","\u5176\u4ed6\u7535\u5b50","\u4e58\u7528\u8f66","\u5546\u7528\u8f66","\u6c7d\u8f66\u96f6\u90e8\u4ef6","\u6c7d\u8f66\u670d\u52a1","\u7535\u6c60","\u7535\u673a","\u767d\u8272\u5bb6\u7535","\u9ed1\u8272\u5bb6\u7535","\u5c0f\u5bb6\u7535","\u996e\u6599\u4e73\u54c1","\u98df\u54c1\u52a0\u5de5","\u5316\u5b66\u5236\u836f","\u4e2d\u836f","\u751f\u7269\u5236\u54c1","\u533b\u7597\u5668\u68b0","\u533b\u7597\u670d\u52a1","\u7535\u529b","\u71c3\u6c14","\u7269\u6d41","\u623f\u5730\u4ea7\u5f00\u53d1","\u8f6f\u4ef6\u5f00\u53d1","\u901a\u4fe1\u8bbe\u5907","\u901a\u4fe1\u670d\u52a1","\u8bc1\u5238","\u4fdd\u9669","\u7164\u70ad\u5f00\u91c7","\u6cb9\u6c14\u5f00\u91c7","\u4e13\u7528\u8bbe\u5907","\u901a\u7528\u8bbe\u5907","\u81ea\u52a8\u5316\u8bbe\u5907","\u5de5\u7a0b\u673a\u68b0");
     private static final String LIMIT_UP_URL = "https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt:asc&date=%s";
     private static final String LIMIT_DOWN_URL = "https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt:asc&date=%s";
     private final EastMoneyBoardMetricsDataProvider baseProvider;
@@ -75,9 +76,15 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         ObjectNode meta = raw.putObject("sectorRankingMeta");
         meta.put("source", "东方财富申万行业").put("defaultLevel", 1).put("limitUpLevel", "细分行业");
         ObjectNode rankings = raw.putObject("sectorRankings");
-        rankings.set("turnover", safelyArray("板块成交额榜", () -> sectorRanking("f6", 1), warnings));
-        rankings.set("rising", safelyArray("板块上涨榜", () -> sectorRanking("f3", 1), warnings));
-        rankings.set("falling", safelyArray("板块下跌榜", () -> sectorRanking("f3", 0), warnings));
+        rankings.set("turnover", safelyArray("??????", () -> sectorRanking("f6", 1, 1), warnings));
+        rankings.set("rising", safelyArray("?????", () -> sectorRanking("f3", 1, 1), warnings));
+        rankings.set("falling", safelyArray("?????", () -> sectorRanking("f3", 0, 1), warnings));
+        rankings.set("turnoverL2", safelyArray("????????", () -> sectorRanking("f6", 1, 2), warnings));
+        rankings.set("risingL2", safelyArray("???????", () -> sectorRanking("f3", 1, 2), warnings));
+        rankings.set("fallingL2", safelyArray("???????", () -> sectorRanking("f3", 0, 2), warnings));
+        rankings.set("turnoverL3", safelyArray("????????", () -> sectorRanking("f6", 1, 3), warnings));
+        rankings.set("risingL3", safelyArray("???????", () -> sectorRanking("f3", 1, 3), warnings));
+        rankings.set("fallingL3", safelyArray("???????", () -> sectorRanking("f3", 0, 3), warnings));
         JsonNode limitUpPool = safely("涨停池明细", () -> limitUpPool(tradeDate), warnings);
         rankings.set("limitUp", validArray(limitUpPool) ? limitUpSectorRanking(limitUpPool) : objectMapper.createArrayNode());
         raw.set("streakLadder", validArray(limitUpPool) ? streakLadder(limitUpPool) : objectMapper.createArrayNode());
@@ -116,20 +123,25 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         return result;
     }
 
-    private ArrayNode sectorRanking(String field, int order) {
+    private ArrayNode sectorRanking(String field, int order, int level) {
         JsonNode rows = get(SECTOR_URL.formatted(order, field)).path("data").path("diff");
-        List<JsonNode> primary = new ArrayList<>();
-        for (JsonNode row : rows) if (PRIMARY_INDUSTRIES.contains(row.path("f14").asText())) primary.add(row);
+        List<JsonNode> matched = new ArrayList<>();
+        for (JsonNode row : rows) if (industryLevel(row.path("f14").asText()) == level) matched.add(row);
         Comparator<JsonNode> comparator = Comparator.comparing(row -> decimal(row, field));
-        primary.sort(order == 1 ? comparator.reversed() : comparator);
+        matched.sort(order == 1 ? comparator.reversed() : comparator);
         ArrayNode result = objectMapper.createArrayNode();
-        primary.stream().limit(10).forEach(row -> result.addObject()
-                .put("code", row.path("f12").asText()).put("name", row.path("f14").asText()).put("level", 1)
+        matched.stream().limit(10).forEach(row -> result.addObject()
+                .put("code", row.path("f12").asText()).put("name", row.path("f14").asText()).put("level", level)
                 .put("change", decimal(row, "f3")).put("turnover", decimal(row, "f6"))
                 .put("rising", row.path("f104").asInt()).put("falling", row.path("f105").asInt())
                 .put("flat", row.path("f106").asInt()).put("leader", row.path("f128").asText())
                 .put("leaderChange", decimal(row, "f136")));
         return result;
+    }
+
+    private int industryLevel(String name) {
+        if (PRIMARY_INDUSTRIES.contains(name)) return 1;
+        return SECONDARY_INDUSTRIES.contains(name) ? 2 : 3;
     }
 
     private int limitDownCount(LocalDate tradeDate) {

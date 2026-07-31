@@ -60,7 +60,9 @@
       </el-table>
     </el-card>
 
-    <div v-if="hasRankings" class="ranking-grid">
+    <div v-if="hasRankings" class="ranking-section">
+      <el-radio-group v-model="sectorLevel" size="small" class="level-switch"><el-radio-button :value="1">&#19968;&#32423;&#34892;&#19994;</el-radio-button><el-radio-button :value="2">&#20108;&#32423;&#34892;&#19994;</el-radio-button><el-radio-button :value="3">&#19977;&#32423;&#34892;&#19994;</el-radio-button></el-radio-group>
+      <div class="ranking-grid">
       <el-card v-for="group in rankingGroups" :key="group.key" class="ranking-card">
         <template #header><div class="section-title"><b>{{ group.title }}</b><span>{{ group.note }}</span></div></template>
         <div v-if="group.rows.length" class="ranking-list">
@@ -77,13 +79,14 @@
         </div>
         <el-empty v-else description="暂无数据" :image-size="52"/>
       </el-card>
+      </div>
     </div>
     <el-alert v-else title="该记录来自旧版采集，点击“重试自动获取”后可生成板块成交额、上涨、下跌和涨停榜。" type="info" :closable="false"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { DailyReview } from '@/api/tradingReview';
 
 interface IndexMetric { name:string; change:number; turnover:number; rising:number; falling:number; flat:number }
@@ -93,18 +96,23 @@ interface IntradayBenchmark { sampleCount?:number; turnoverAmount?:number; turno
 interface DataQuality { source?:string; status?:string; warningCount?:number; collectedAt?:string }
 interface StreakMetric { level:number; label:string; count:number }
 interface DimensionMetric { label:string; score:number; weight:number; reason:string }
-interface MarketDetails { indices:IndexMetric[]; streakLadder:StreakMetric[]; warnings:string[]; marketMedian:MarketMedian; intradayBenchmark:IntradayBenchmark; dataQuality:DataQuality; sectorRankings:{turnover:SectorMetric[];rising:SectorMetric[];falling:SectorMetric[];limitUp:SectorMetric[]} }
+interface MarketDetails { indices:IndexMetric[]; streakLadder:StreakMetric[]; warnings:string[]; marketMedian:MarketMedian; intradayBenchmark:IntradayBenchmark; dataQuality:DataQuality; sectorRankings:{turnover:SectorMetric[];rising:SectorMetric[];falling:SectorMetric[];turnoverL2?:SectorMetric[];risingL2?:SectorMetric[];fallingL2?:SectorMetric[];turnoverL3?:SectorMetric[];risingL3?:SectorMetric[];fallingL3?:SectorMetric[];limitUp:SectorMetric[]} }
 
 const props=defineProps<{review:DailyReview}>();
 const empty=():MarketDetails=>({indices:[],streakLadder:[],warnings:[],marketMedian:{},intradayBenchmark:{},dataQuality:{},sectorRankings:{turnover:[],rising:[],falling:[],limitUp:[]}});
-const details=computed<MarketDetails>(()=>{if(!props.review.rawMetrics)return empty();try{const value=JSON.parse(props.review.rawMetrics);return {indices:Array.isArray(value.indices)?value.indices:[],streakLadder:Array.isArray(value.streakLadder)?value.streakLadder:[],warnings:Array.isArray(value.warnings)?value.warnings:[],marketMedian:value.marketMedian||{},intradayBenchmark:value.intradayBenchmark||{},dataQuality:value.dataQuality||{},sectorRankings:{turnover:value.sectorRankings?.turnover||[],rising:value.sectorRankings?.rising||[],falling:value.sectorRankings?.falling||[],limitUp:value.sectorRankings?.limitUp||[]}};}catch{return empty();}});
+const details=computed<MarketDetails>(()=>{if(!props.review.rawMetrics)return empty();try{const value=JSON.parse(props.review.rawMetrics);return {indices:Array.isArray(value.indices)?value.indices:[],streakLadder:Array.isArray(value.streakLadder)?value.streakLadder:[],warnings:Array.isArray(value.warnings)?value.warnings:[],marketMedian:value.marketMedian||{},intradayBenchmark:value.intradayBenchmark||{},dataQuality:value.dataQuality||{},sectorRankings:{turnover:value.sectorRankings?.turnover||[],rising:value.sectorRankings?.rising||[],falling:value.sectorRankings?.falling||[],turnoverL2:value.sectorRankings?.turnoverL2||[],risingL2:value.sectorRankings?.risingL2||[],fallingL2:value.sectorRankings?.fallingL2||[],turnoverL3:value.sectorRankings?.turnoverL3||[],risingL3:value.sectorRankings?.risingL3||[],fallingL3:value.sectorRankings?.fallingL3||[],limitUp:value.sectorRankings?.limitUp||[]}};}catch{return empty();}});
 const dimensionRows=computed<DimensionMetric[]>(()=>{if(!props.review.dimensionScores)return [];try{return Object.values(JSON.parse(props.review.dimensionScores)) as DimensionMetric[];}catch{return [];}});
 const breadthRatio=computed(()=>props.review.fallingCount?`${(Number(props.review.risingCount||0)/props.review.fallingCount).toFixed(2)} : 1`:'-');
+const sectorLevel=ref(1);
+const primaryIndustryNames=new Set(["????","????","??","????","??","??","????","????","????","????","????","????","????","???","????","????","??","????","????","????","????","???","??","??","??","????","????","??","????","??","????"]);
+const secondaryIndustryNames=new Set(["???","??","?????","????","???","???","?????","????","??","??","????","????","???","????","????","????","??","????","????","????","??","??","??","?????","????","????","????","??","??","????","????","????","????","?????","????"]);
+const legacyRows=(rows:SectorMetric[])=>rows.filter(item=>sectorLevel.value===1?(item.level===1||primaryIndustryNames.has(item.name)):sectorLevel.value===2?(item.level===2||secondaryIndustryNames.has(item.name)):item.level===3||(!primaryIndustryNames.has(item.name)&&!secondaryIndustryNames.has(item.name)));
+const rowsFor=(key:'turnover'|'rising'|'falling')=>{if(sectorLevel.value===2){const rows=key==='turnover'?details.value.sectorRankings.turnoverL2:key==='rising'?details.value.sectorRankings.risingL2:details.value.sectorRankings.fallingL2;return rows?.length?rows:legacyRows(details.value.sectorRankings[key]);}if(sectorLevel.value===3){const rows=key==='turnover'?details.value.sectorRankings.turnoverL3:key==='rising'?details.value.sectorRankings.risingL3:details.value.sectorRankings.fallingL3;return rows?.length?rows:legacyRows(details.value.sectorRankings[key]);}return legacyRows(details.value.sectorRankings[key]);};
 const rankingGroups=computed(()=>[
-  {key:'turnover',title:'一级行业成交额',note:'东方财富申万一级行业 · 资金活跃度',rows:details.value.sectorRankings.turnover},
-  {key:'rising',title:'一级行业上涨榜',note:'东方财富申万一级行业 · 按涨幅',rows:details.value.sectorRankings.rising},
-  {key:'falling',title:'一级行业下跌榜',note:'东方财富申万一级行业 · 按跌幅',rows:details.value.sectorRankings.falling},
-  {key:'limitUp',title:'细分行业涨停榜',note:'涨停池原始行业标签 · 按涨停家数',rows:details.value.sectorRankings.limitUp}
+  {key:'turnover',title:sectorLevel.value+'??????',note:'???????? ? ?????',rows:rowsFor('turnover')},
+  {key:'rising',title:sectorLevel.value+'??????',note:'???????? ? ???',rows:rowsFor('rising')},
+  {key:'falling',title:sectorLevel.value+'??????',note:'???????? ? ???',rows:rowsFor('falling')},
+  {key:'limitUp',title:'???????',note:'????????? ? ?????',rows:details.value.sectorRankings.limitUp}
 ]);
 const hasRankings=computed(()=>rankingGroups.value.some(group=>group.rows.length));
 const collectedAt=computed(()=>{const value=details.value.dataQuality.collectedAt||props.review.collectedAt;return value?new Date(value).toLocaleString('zh-CN',{hour12:false}):'-';});
@@ -114,5 +122,5 @@ const tone=(value?:number)=>Number(value||0)>0?'up':Number(value||0)<0?'down':''
 </script>
 
 <style scoped>
-.metric-note{display:block;margin-top:3px;color:#94a3b8;font-size:11px}.market-details{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-title span{font-size:12px;color:#94a3b8}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric-grid>div,.ladder-grid>div,.dimension-grid>div{padding:12px;border-radius:12px;background:#f8fafc}.metric-grid small,.metric-grid strong{display:block}.metric-grid small{color:#64748b}.metric-grid strong{margin-top:6px;font-size:18px}.ladder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ladder-grid small,.ladder-grid strong,.dimension-grid span,.dimension-grid strong,.dimension-grid small{display:block}.ladder-grid strong{margin-top:6px;font-size:20px}.dimension-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.dimension-grid span,.dimension-grid small{color:#64748b}.dimension-grid strong{margin:6px 0;font-size:20px}.ranking-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.ranking-row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}.ranking-row:last-child{border-bottom:0}.rank{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#eff6ff;color:#2563eb;font-size:12px}.sector-name b,.sector-name small,.sector-value b,.sector-value small{display:block}.sector-name small,.sector-value small{margin-top:3px;color:#94a3b8;font-size:11px}.sector-value{text-align:right}.up{color:#ef4444}.down{color:#16a34a}@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr)}.dimension-grid{grid-template-columns:repeat(2,1fr)}.ranking-grid{grid-template-columns:1fr}}@media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr)}.section-title{align-items:flex-start;flex-direction:column}.market-details :deep(.el-table){min-width:620px}.market-details :deep(.el-card__body){overflow-x:auto}}
+.metric-note{display:block;margin-top:3px;color:#94a3b8;font-size:11px}.market-details{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-title span{font-size:12px;color:#94a3b8}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric-grid>div,.ladder-grid>div,.dimension-grid>div{padding:12px;border-radius:12px;background:#f8fafc}.metric-grid small,.metric-grid strong{display:block}.metric-grid small{color:#64748b}.metric-grid strong{margin-top:6px;font-size:18px}.ladder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ladder-grid small,.ladder-grid strong,.dimension-grid span,.dimension-grid strong,.dimension-grid small{display:block}.ladder-grid strong{margin-top:6px;font-size:20px}.dimension-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.dimension-grid span,.dimension-grid small{color:#64748b}.dimension-grid strong{margin:6px 0;font-size:20px}.ranking-section{display:flex;flex-direction:column;gap:10px}.level-switch{align-self:flex-start}.ranking-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.ranking-row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}.ranking-row:last-child{border-bottom:0}.rank{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#eff6ff;color:#2563eb;font-size:12px}.sector-name b,.sector-name small,.sector-value b,.sector-value small{display:block}.sector-name small,.sector-value small{margin-top:3px;color:#94a3b8;font-size:11px}.sector-value{text-align:right}.up{color:#ef4444}.down{color:#16a34a}@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr)}.dimension-grid{grid-template-columns:repeat(2,1fr)}.ranking-grid{grid-template-columns:1fr}}@media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr)}.section-title{align-items:flex-start;flex-direction:column}.market-details :deep(.el-table){min-width:620px}.market-details :deep(.el-card__body){overflow-x:auto}}
 </style>
