@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProv
     private final HttpFetcher httpFetcher;
     private final Sleeper sleeper;
 
+    @Autowired
     public EastMoneyTradingMarketDataProvider(ObjectMapper objectMapper) {
         this(objectMapper, createHttpFetcher(), Thread::sleep);
     }
