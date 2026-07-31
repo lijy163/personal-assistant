@@ -12,6 +12,27 @@
         <div><small>最高连板</small><strong>{{ review.maxStreak ?? '-' }} 板</strong></div>
         <div><small>两市成交额</small><strong>{{ amount(review.turnoverAmount) }}</strong></div>
         <div><small>成交额环比</small><strong :class="tone(review.turnoverChange)">{{ percent(review.turnoverChange) }}</strong></div>
+        <div><small>全市场涨幅中位数</small><strong :class="tone(details.marketMedian.change)">{{ percent(details.marketMedian.change) }}</strong><span class="metric-note">样本 {{ details.marketMedian.sampleCount || '-' }} &middot; 覆盖 {{ percent(details.marketMedian.coverage) }}</span></div>
+      </div>
+    </el-card>
+
+    <el-card v-if="review.snapshotType === 'REALTIME'">
+      <template #header><div class="section-title"><b>盘中同时间基准</b><span>仅与历史交易日相近时刻成交额比较</span></div></template>
+      <div class="metric-grid">
+        <div><small>成交额环比</small><strong :class="tone(details.intradayBenchmark.turnoverChange)">{{ percent(details.intradayBenchmark.turnoverChange) }}</strong></div>
+        <div><small>历史同时间成交额</small><strong>{{ amount(details.intradayBenchmark.turnoverAmount) }}</strong></div>
+        <div><small>有效历史样本</small><strong>{{ details.intradayBenchmark.sampleCount || 0 }} 日</strong></div>
+        <div><small>可比状态</small><strong>{{ details.intradayBenchmark.status === 'AVAILABLE' ? '可比较' : '历史不足' }}</strong></div>
+      </div>
+    </el-card>
+
+    <el-card v-if="details.dataQuality.status || review.collectionStatus">
+      <template #header><div class="section-title"><b>数据质量</b><span>数据来源、采集状态与降级情况</span></div></template>
+      <div class="metric-grid">
+        <div><small>来源</small><strong>{{ details.dataQuality.source || review.dataSource || '-' }}</strong></div>
+        <div><small>状态</small><strong>{{ details.dataQuality.status || review.collectionStatus || '-' }}</strong></div>
+        <div><small>采集时间</small><strong>{{ collectedAt }}</strong></div>
+        <div><small>降级项</small><strong>{{ details.dataQuality.warningCount || details.warnings.length || 0 }} 项</strong></div>
       </div>
     </el-card>
 
@@ -67,13 +88,16 @@ import type { DailyReview } from '@/api/tradingReview';
 
 interface IndexMetric { name:string; change:number; turnover:number; rising:number; falling:number; flat:number }
 interface SectorMetric { code?:string; name:string; level?:number; levelLabel?:string; change?:number; turnover?:number; rising?:number; falling?:number; flat?:number; leader?:string; leaderChange?:number; limitUpCount?:number }
+interface MarketMedian { change?:number; sampleCount?:number; expectedCount?:number; coverage?:number }
+interface IntradayBenchmark { sampleCount?:number; turnoverAmount?:number; turnoverChange?:number; status?:string }
+interface DataQuality { source?:string; status?:string; warningCount?:number; collectedAt?:string }
 interface StreakMetric { level:number; label:string; count:number }
 interface DimensionMetric { label:string; score:number; weight:number; reason:string }
-interface MarketDetails { indices:IndexMetric[]; streakLadder:StreakMetric[]; warnings:string[]; sectorRankings:{turnover:SectorMetric[];rising:SectorMetric[];falling:SectorMetric[];limitUp:SectorMetric[]} }
+interface MarketDetails { indices:IndexMetric[]; streakLadder:StreakMetric[]; warnings:string[]; marketMedian:MarketMedian; intradayBenchmark:IntradayBenchmark; dataQuality:DataQuality; sectorRankings:{turnover:SectorMetric[];rising:SectorMetric[];falling:SectorMetric[];limitUp:SectorMetric[]} }
 
 const props=defineProps<{review:DailyReview}>();
-const empty=():MarketDetails=>({indices:[],streakLadder:[],warnings:[],sectorRankings:{turnover:[],rising:[],falling:[],limitUp:[]}});
-const details=computed<MarketDetails>(()=>{if(!props.review.rawMetrics)return empty();try{const value=JSON.parse(props.review.rawMetrics);return {indices:Array.isArray(value.indices)?value.indices:[],streakLadder:Array.isArray(value.streakLadder)?value.streakLadder:[],warnings:Array.isArray(value.warnings)?value.warnings:[],sectorRankings:{turnover:value.sectorRankings?.turnover||[],rising:value.sectorRankings?.rising||[],falling:value.sectorRankings?.falling||[],limitUp:value.sectorRankings?.limitUp||[]}};}catch{return empty();}});
+const empty=():MarketDetails=>({indices:[],streakLadder:[],warnings:[],marketMedian:{},intradayBenchmark:{},dataQuality:{},sectorRankings:{turnover:[],rising:[],falling:[],limitUp:[]}});
+const details=computed<MarketDetails>(()=>{if(!props.review.rawMetrics)return empty();try{const value=JSON.parse(props.review.rawMetrics);return {indices:Array.isArray(value.indices)?value.indices:[],streakLadder:Array.isArray(value.streakLadder)?value.streakLadder:[],warnings:Array.isArray(value.warnings)?value.warnings:[],marketMedian:value.marketMedian||{},intradayBenchmark:value.intradayBenchmark||{},dataQuality:value.dataQuality||{},sectorRankings:{turnover:value.sectorRankings?.turnover||[],rising:value.sectorRankings?.rising||[],falling:value.sectorRankings?.falling||[],limitUp:value.sectorRankings?.limitUp||[]}};}catch{return empty();}});
 const dimensionRows=computed<DimensionMetric[]>(()=>{if(!props.review.dimensionScores)return [];try{return Object.values(JSON.parse(props.review.dimensionScores)) as DimensionMetric[];}catch{return [];}});
 const breadthRatio=computed(()=>props.review.fallingCount?`${(Number(props.review.risingCount||0)/props.review.fallingCount).toFixed(2)} : 1`:'-');
 const rankingGroups=computed(()=>[
@@ -83,11 +107,12 @@ const rankingGroups=computed(()=>[
   {key:'limitUp',title:'细分行业涨停榜',note:'涨停池原始行业标签 · 按涨停家数',rows:details.value.sectorRankings.limitUp}
 ]);
 const hasRankings=computed(()=>rankingGroups.value.some(group=>group.rows.length));
+const collectedAt=computed(()=>{const value=details.value.dataQuality.collectedAt||props.review.collectedAt;return value?new Date(value).toLocaleString('zh-CN',{hour12:false}):'-';});
 const percent=(value?:number)=>value==null?'-':`${Number(value).toFixed(2)}%`;
 const amount=(value?:number)=>{const number=Number(value||0);return number>=1e8?`${(number/1e8).toFixed(2)} 亿`:number>=1e4?`${(number/1e4).toFixed(2)} 万`:number?number.toFixed(2):'-';};
 const tone=(value?:number)=>Number(value||0)>0?'up':Number(value||0)<0?'down':'';
 </script>
 
 <style scoped>
-.market-details{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-title span{font-size:12px;color:#94a3b8}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric-grid>div,.ladder-grid>div,.dimension-grid>div{padding:12px;border-radius:12px;background:#f8fafc}.metric-grid small,.metric-grid strong{display:block}.metric-grid small{color:#64748b}.metric-grid strong{margin-top:6px;font-size:18px}.ladder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ladder-grid small,.ladder-grid strong,.dimension-grid span,.dimension-grid strong,.dimension-grid small{display:block}.ladder-grid strong{margin-top:6px;font-size:20px}.dimension-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.dimension-grid span,.dimension-grid small{color:#64748b}.dimension-grid strong{margin:6px 0;font-size:20px}.ranking-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.ranking-row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}.ranking-row:last-child{border-bottom:0}.rank{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#eff6ff;color:#2563eb;font-size:12px}.sector-name b,.sector-name small,.sector-value b,.sector-value small{display:block}.sector-name small,.sector-value small{margin-top:3px;color:#94a3b8;font-size:11px}.sector-value{text-align:right}.up{color:#ef4444}.down{color:#16a34a}@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr)}.dimension-grid{grid-template-columns:repeat(2,1fr)}.ranking-grid{grid-template-columns:1fr}}@media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr)}.section-title{align-items:flex-start;flex-direction:column}.market-details :deep(.el-table){min-width:620px}.market-details :deep(.el-card__body){overflow-x:auto}}
+.metric-note{display:block;margin-top:3px;color:#94a3b8;font-size:11px}.market-details{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-title span{font-size:12px;color:#94a3b8}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric-grid>div,.ladder-grid>div,.dimension-grid>div{padding:12px;border-radius:12px;background:#f8fafc}.metric-grid small,.metric-grid strong{display:block}.metric-grid small{color:#64748b}.metric-grid strong{margin-top:6px;font-size:18px}.ladder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ladder-grid small,.ladder-grid strong,.dimension-grid span,.dimension-grid strong,.dimension-grid small{display:block}.ladder-grid strong{margin-top:6px;font-size:20px}.dimension-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.dimension-grid span,.dimension-grid small{color:#64748b}.dimension-grid strong{margin:6px 0;font-size:20px}.ranking-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.ranking-row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}.ranking-row:last-child{border-bottom:0}.rank{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#eff6ff;color:#2563eb;font-size:12px}.sector-name b,.sector-name small,.sector-value b,.sector-value small{display:block}.sector-name small,.sector-value small{margin-top:3px;color:#94a3b8;font-size:11px}.sector-value{text-align:right}.up{color:#ef4444}.down{color:#16a34a}@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr)}.dimension-grid{grid-template-columns:repeat(2,1fr)}.ranking-grid{grid-template-columns:1fr}}@media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr)}.section-title{align-items:flex-start;flex-direction:column}.market-details :deep(.el-table){min-width:620px}.market-details :deep(.el-card__body){overflow-x:auto}}
 </style>
