@@ -2,6 +2,9 @@ package com.personal.assistant.module.tradingreview.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.personal.assistant.module.tradingreview.dto.CollectionResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
 import com.personal.assistant.module.tradingreview.dto.SentimentResult;
 import com.personal.assistant.module.tradingreview.entity.TradingDailyReview;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -27,15 +31,17 @@ public class TradingMarketCollectionService {
     private final SentimentRuleEngine ruleEngine;
     private final TradingCalendarService calendar;
     private final TradingMarketSnapshotPointMapper points;
+    private final ObjectMapper objectMapper;
 
     public TradingMarketCollectionService(TradingDailyReviewMapper mapper, TradingMarketDataProvider provider,
                                           SentimentRuleEngine ruleEngine, TradingCalendarService calendar,
-                                          TradingMarketSnapshotPointMapper points) {
+                                          TradingMarketSnapshotPointMapper points, ObjectMapper objectMapper) {
         this.mapper = mapper;
         this.provider = provider;
         this.ruleEngine = ruleEngine;
         this.calendar = calendar;
         this.points = points;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -47,6 +53,7 @@ public class TradingMarketCollectionService {
         if (review == null) review = newReview(userId, tradeDate, snapshotType, now);
         try {
             MarketSnapshot snapshot = withTurnoverChange(userId, tradeDate, snapshotType, provider.fetch(tradeDate));
+            snapshot = withIntradayBenchmark(userId, tradeDate, snapshotType, snapshot);
             applySnapshot(review, snapshot);
             SentimentResult result = ruleEngine.evaluate(snapshot);
             review.setSentimentScore(result.score());
@@ -115,6 +122,42 @@ public class TradingMarketCollectionService {
                 snapshot.limitDownCount(), snapshot.brokenBoardCount(), snapshot.brokenBoardRate(), snapshot.maxStreak(),
                 snapshot.turnoverAmount(), change, snapshot.industrySectors(), snapshot.conceptSectors(), snapshot.source(),
                 snapshot.quoteTime(), snapshot.rawMetrics());
+    }
+
+    private MarketSnapshot withIntradayBenchmark(Long userId, LocalDate tradeDate, String snapshotType,
+                                                  MarketSnapshot snapshot) {
+        if (!"REALTIME".equals(snapshotType) || snapshot.turnoverAmount() == null || snapshot.quoteTime() == null)
+            return snapshot;
+        List<TradingMarketSnapshotPoint> history = points.selectList(new LambdaQueryWrapper<TradingMarketSnapshotPoint>()
+                .eq(TradingMarketSnapshotPoint::getUserId, userId).eq(TradingMarketSnapshotPoint::getSnapshotType, "REALTIME")
+                .lt(TradingMarketSnapshotPoint::getTradeDate, tradeDate).isNotNull(TradingMarketSnapshotPoint::getTurnoverAmount)
+                .orderByDesc(TradingMarketSnapshotPoint::getTradeDate).last("limit 30"));
+        LocalTime nowTime = snapshot.quoteTime().toLocalTime();
+        List<BigDecimal> comparable = history.stream().filter(point -> point.getQuoteTime() != null
+                        && Math.abs(java.time.Duration.between(point.getQuoteTime().toLocalTime(), nowTime).toMinutes()) <= 10)
+                .map(TradingMarketSnapshotPoint::getTurnoverAmount).filter(value -> value.signum() > 0).limit(5).toList();
+        BigDecimal benchmark = comparable.isEmpty() ? null : comparable.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(comparable.size()), 2, RoundingMode.HALF_UP);
+        BigDecimal change = benchmark == null ? null : snapshot.turnoverAmount().subtract(benchmark)
+                .multiply(BigDecimal.valueOf(100)).divide(benchmark, 2, RoundingMode.HALF_UP);
+        String raw = addIntradayBenchmark(snapshot.rawMetrics(), benchmark, comparable.size(), change);
+        return new MarketSnapshot(snapshot.shanghaiChange(), snapshot.shenzhenChange(), snapshot.chinextChange(),
+                snapshot.risingCount(), snapshot.fallingCount(), snapshot.flatCount(), snapshot.limitUpCount(),
+                snapshot.limitDownCount(), snapshot.brokenBoardCount(), snapshot.brokenBoardRate(), snapshot.maxStreak(),
+                snapshot.turnoverAmount(), change, snapshot.industrySectors(), snapshot.conceptSectors(), snapshot.source(),
+                snapshot.quoteTime(), raw);
+    }
+
+    private String addIntradayBenchmark(String rawMetrics, BigDecimal benchmark, int sampleCount, BigDecimal change) {
+        try {
+            ObjectNode raw = rawMetrics == null || rawMetrics.isBlank() ? objectMapper.createObjectNode()
+                    : (ObjectNode) objectMapper.readTree(rawMetrics);
+            raw.putObject("intradayBenchmark").put("sampleCount", sampleCount).put("turnoverAmount", benchmark)
+                    .put("turnoverChange", change).put("status", sampleCount >= 3 ? "AVAILABLE" : "INSUFFICIENT_HISTORY");
+            JsonNode quality = raw.path("dataQuality");
+            if (quality instanceof ObjectNode qualityNode) qualityNode.put("intradayBenchmarkSamples", sampleCount);
+            return raw.toString();
+        } catch (Exception exception) { return rawMetrics; }
     }
 
     private TradingDailyReview find(Long userId, LocalDate date, String type) {

@@ -21,6 +21,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Supplier;
 
 @Primary
@@ -30,7 +34,8 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
     private static final String BASE = "https://push2delay.eastmoney.com";
     private static final String INDEX_URL = BASE + "/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001,0.399006&fields=f3,f6,f104,f105,f106";
-    private static final String SECTOR_URL = BASE + "/api/qt/clist/get?pn=1&pz=10&po=%d&np=1&fltt=2&invt=2&fid=%s&fs=m:90+t:2&fields=f12,f14,f3,f6,f104,f105,f106,f128,f136";
+    private static final String SECTOR_URL = BASE + "/api/qt/clist/get?pn=1&pz=500&po=%d&np=1&fltt=2&invt=2&fid=%s&fs=m:90+t:2&fields=f12,f14,f3,f6,f104,f105,f106,f128,f136";
+    private static final Set<String> PRIMARY_INDUSTRIES = Set.of("农林牧渔","基础化工","钢铁","有色金属","电子","汽车","家用电器","食品饮料","纺织服饰","轻工制造","医药生物","公用事业","交通运输","房地产","商贸零售","社会服务","综合","建筑材料","建筑装饰","电力设备","国防军工","计算机","传媒","通信","银行","非银金融","美容护理","煤炭","石油石化","环保","机械设备");
     private static final String LIMIT_UP_URL = "https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt:asc&date=%s";
     private static final String LIMIT_DOWN_URL = "https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt:asc&date=%s";
     private final EastMoneyBoardMetricsDataProvider baseProvider;
@@ -64,8 +69,11 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         int flat = validArray(indices) ? sum(indices, "f106") : value(base.flatCount());
         BigDecimal turnover = validArray(indices) ? sumDecimal(indices, "f6") : base.turnoverAmount();
         raw.put("marketCount", rising + falling + flat);
+        copyMarketMedian(base.rawMetrics(), raw);
         raw.put("breadthMethod", validArray(indices) ? "上证与深证指数行情涨跌家数汇总" : "基础行情降级数据");
         raw.set("indices", validArray(indices) ? indexMetrics(indices) : objectMapper.createArrayNode());
+        ObjectNode meta = raw.putObject("sectorRankingMeta");
+        meta.put("source", "东方财富申万行业").put("defaultLevel", 1).put("limitUpLevel", "细分行业");
         ObjectNode rankings = raw.putObject("sectorRankings");
         rankings.set("turnover", safelyArray("板块成交额榜", () -> sectorRanking("f6", 1), warnings));
         rankings.set("rising", safelyArray("板块上涨榜", () -> sectorRanking("f3", 1), warnings));
@@ -76,11 +84,24 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         raw.set("limitUpStocks", validArray(limitUpPool) ? limitUpStocks(limitUpPool) : objectMapper.createArrayNode());
         Integer limitDown = safely("跌停池", () -> limitDownCount(tradeDate), warnings);
         raw.put("degraded", !warnings.isEmpty());
+        raw.putObject("dataQuality").put("source", name()).put("status", warnings.isEmpty() ? "COMPLETE" : "DEGRADED")
+                .put("warningCount", warnings.size()).put("collectedAt", LocalDateTime.now(SHANGHAI).toString())
+                .put("marketMedianAvailable", raw.path("marketMedian").hasNonNull("change"));
         return new MarketSnapshot(base.shanghaiChange(), base.shenzhenChange(), base.chinextChange(),
                 rising, falling, flat, base.limitUpCount(), limitDown == null ? base.limitDownCount() : limitDown,
                 base.brokenBoardCount(), base.brokenBoardRate(), base.maxStreak(), turnover,
                 base.turnoverChange(), base.industrySectors(), base.conceptSectors(), name(),
                 LocalDateTime.now(SHANGHAI), raw.toString());
+    }
+
+    private void copyMarketMedian(String sourceRaw, ObjectNode target) {
+        if (sourceRaw == null || sourceRaw.isBlank()) return;
+        try {
+            JsonNode wrapped = objectMapper.readTree(sourceRaw).path("marketMetrics");
+            JsonNode metrics = wrapped.isTextual() ? objectMapper.readTree(wrapped.asText()) : wrapped;
+            JsonNode median = metrics.path("marketMedian");
+            if (median.isObject()) target.set("marketMedian", median);
+        } catch (Exception ignored) {}
     }
 
     private ArrayNode indexMetrics(JsonNode indices) {
@@ -97,14 +118,17 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
 
     private ArrayNode sectorRanking(String field, int order) {
         JsonNode rows = get(SECTOR_URL.formatted(order, field)).path("data").path("diff");
+        List<JsonNode> primary = new ArrayList<>();
+        for (JsonNode row : rows) if (PRIMARY_INDUSTRIES.contains(row.path("f14").asText())) primary.add(row);
+        Comparator<JsonNode> comparator = Comparator.comparing(row -> decimal(row, field));
+        primary.sort(order == 1 ? comparator.reversed() : comparator);
         ArrayNode result = objectMapper.createArrayNode();
-        for (JsonNode row : rows) {
-            result.addObject().put("code", row.path("f12").asText()).put("name", row.path("f14").asText())
-                    .put("change", decimal(row, "f3")).put("turnover", decimal(row, "f6"))
-                    .put("rising", row.path("f104").asInt()).put("falling", row.path("f105").asInt())
-                    .put("flat", row.path("f106").asInt()).put("leader", row.path("f128").asText())
-                    .put("leaderChange", decimal(row, "f136"));
-        }
+        primary.stream().limit(10).forEach(row -> result.addObject()
+                .put("code", row.path("f12").asText()).put("name", row.path("f14").asText()).put("level", 1)
+                .put("change", decimal(row, "f3")).put("turnover", decimal(row, "f6"))
+                .put("rising", row.path("f104").asInt()).put("falling", row.path("f105").asInt())
+                .put("flat", row.path("f106").asInt()).put("leader", row.path("f128").asText())
+                .put("leaderChange", decimal(row, "f136")));
         return result;
     }
 
@@ -123,7 +147,7 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         for (JsonNode stock : pool) counts.merge(stock.path("hybk").asText("其他"), 1, Integer::sum);
         ArrayNode result = objectMapper.createArrayNode();
         counts.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .limit(10).forEach(entry -> result.addObject().put("name", entry.getKey()).put("limitUpCount", entry.getValue()));
+                .limit(10).forEach(entry -> result.addObject().put("name", entry.getKey()).put("levelLabel", "细分行业").put("limitUpCount", entry.getValue()));
         return result;
     }
 

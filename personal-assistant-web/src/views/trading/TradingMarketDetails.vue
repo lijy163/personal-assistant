@@ -45,7 +45,7 @@
         <div v-if="group.rows.length" class="ranking-list">
           <div v-for="(item,index) in group.rows" :key="item.code || item.name" class="ranking-row">
             <span class="rank">{{ index + 1 }}</span>
-            <div class="sector-name"><b>{{ item.name }}</b><small v-if="item.leader">领涨 {{ item.leader }}</small></div>
+            <div class="sector-name"><b>{{ item.name }}</b><small>{{ item.levelLabel || (item.level===1?'一级行业':'') }}<template v-if="item.leader"> · 领涨 {{ item.leader }}</template></small></div>
             <div class="sector-value">
               <b v-if="group.key==='turnover'">{{ amount(item.turnover) }}</b>
               <b v-else-if="group.key==='limitUp'" class="up">{{ item.limitUpCount }} 家涨停</b>
@@ -66,7 +66,7 @@ import { computed } from 'vue';
 import type { DailyReview } from '@/api/tradingReview';
 
 interface IndexMetric { name:string; change:number; turnover:number; rising:number; falling:number; flat:number }
-interface SectorMetric { code?:string; name:string; change?:number; turnover?:number; rising?:number; falling?:number; flat?:number; leader?:string; leaderChange?:number; limitUpCount?:number }
+interface SectorMetric { code?:string; name:string; level?:number; levelLabel?:string; change?:number; turnover?:number; rising?:number; falling?:number; flat?:number; leader?:string; leaderChange?:number; limitUpCount?:number }
 interface StreakMetric { level:number; label:string; count:number }
 interface DimensionMetric { label:string; score:number; weight:number; reason:string }
 interface MarketDetails { indices:IndexMetric[]; streakLadder:StreakMetric[]; warnings:string[]; sectorRankings:{turnover:SectorMetric[];rising:SectorMetric[];falling:SectorMetric[];limitUp:SectorMetric[]} }
@@ -77,10 +77,10 @@ const details=computed<MarketDetails>(()=>{if(!props.review.rawMetrics)return em
 const dimensionRows=computed<DimensionMetric[]>(()=>{if(!props.review.dimensionScores)return [];try{return Object.values(JSON.parse(props.review.dimensionScores)) as DimensionMetric[];}catch{return [];}});
 const breadthRatio=computed(()=>props.review.fallingCount?`${(Number(props.review.risingCount||0)/props.review.fallingCount).toFixed(2)} : 1`:'-');
 const rankingGroups=computed(()=>[
-  {key:'turnover',title:'板块成交额',note:'资金活跃度',rows:details.value.sectorRankings.turnover},
-  {key:'rising',title:'板块上涨榜',note:'按板块涨幅',rows:details.value.sectorRankings.rising},
-  {key:'falling',title:'板块下跌榜',note:'按板块跌幅',rows:details.value.sectorRankings.falling},
-  {key:'limitUp',title:'板块涨停榜',note:'按涨停家数',rows:details.value.sectorRankings.limitUp}
+  {key:'turnover',title:'一级行业成交额',note:'东方财富申万一级行业 · 资金活跃度',rows:details.value.sectorRankings.turnover},
+  {key:'rising',title:'一级行业上涨榜',note:'东方财富申万一级行业 · 按涨幅',rows:details.value.sectorRankings.rising},
+  {key:'falling',title:'一级行业下跌榜',note:'东方财富申万一级行业 · 按跌幅',rows:details.value.sectorRankings.falling},
+  {key:'limitUp',title:'细分行业涨停榜',note:'涨停池原始行业标签 · 按涨停家数',rows:details.value.sectorRankings.limitUp}
 ]);
 const hasRankings=computed(()=>rankingGroups.value.some(group=>group.rows.length));
 const percent=(value?:number)=>value==null?'-':`${Number(value).toFixed(2)}%`;

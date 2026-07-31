@@ -2,6 +2,7 @@ package com.personal.assistant.module.tradingreview.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
@@ -23,7 +24,7 @@ import java.util.List;
 public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProvider {
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
     private static final int MARKET_PAGE_SIZE = 500;
-    private static final int MAX_MARKET_PAGES = 1;
+    private static final int MAX_MARKET_PAGES = 20;
     private static final int MAX_ATTEMPTS = 4;
     private static final long[] RETRY_DELAYS_MILLIS = {0, 400, 1_000, 2_000};
     private static final String[] EASTMONEY_HOSTS = {
@@ -58,7 +59,8 @@ public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProv
     @Override
     public MarketSnapshot fetch(LocalDate tradeDate) {
         try {
-            List<JsonNode> market = fetchMarketPages();
+            MarketQuotes marketQuotes = fetchMarketPages();
+            List<JsonNode> market = marketQuotes.quotes();
             if (market.isEmpty()) throw new IllegalStateException("东方财富未返回全市场行情");
             int rising = 0, falling = 0, flat = 0, limitUp = 0, limitDown = 0;
             BigDecimal turnover = BigDecimal.ZERO;
@@ -72,14 +74,22 @@ public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProv
                 if (change != null && change.compareTo(new BigDecimal("9.5")) >= 0) limitUp++;
                 if (change != null && change.compareTo(new BigDecimal("-9.5")) <= 0) limitDown++;
             }
+            List<BigDecimal> changes = market.stream().map(quote -> decimal(quote, "f3"))
+                    .filter(java.util.Objects::nonNull).sorted().toList();
             JsonNode indices = get(INDEX_URL).path("data").path("diff");
             BigDecimal shanghai = index(indices, 0, "f3");
             BigDecimal shenzhen = index(indices, 1, "f3");
             BigDecimal chinext = index(indices, 2, "f3");
-            String raw = objectMapper.createObjectNode()
+            ObjectNode rawNode = objectMapper.createObjectNode()
                     .put("tradeDate", tradeDate.toString()).put("marketCount", market.size())
                     .put("marketPageSize", MARKET_PAGE_SIZE)
-                    .put("limitMethod", "涨跌幅阈值近似，涨停池数据将覆盖该值").toString();
+                    .put("limitMethod", "??????????????????");
+            rawNode.putObject("marketMedian")
+                    .put("change", median(changes)).put("sampleCount", changes.size())
+                    .put("expectedCount", marketQuotes.expectedCount())
+                    .put("coverage", coverage(market.size(), marketQuotes.expectedCount()))
+                    .put("method", "???????????????");
+            String raw = rawNode.toString();
             return new MarketSnapshot(shanghai, shenzhen, chinext, rising, falling, flat, limitUp, limitDown,
                     null, null, null, turnover, null, sectors("m:90+t:2"), sectors("m:90+t:3"),
                     name(), LocalDateTime.now(SHANGHAI), raw);
@@ -88,17 +98,30 @@ public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProv
         }
     }
 
-    private List<JsonNode> fetchMarketPages() {
+    private MarketQuotes fetchMarketPages() {
         List<JsonNode> quotes = new ArrayList<>();
+        int expectedCount = 0;
         for (int page = 1; page <= MAX_MARKET_PAGES; page++) {
             JsonNode data = get(MARKET_URL.formatted(page)).path("data");
             JsonNode rows = data.path("diff");
             if (!rows.isArray() || rows.isEmpty()) break;
             rows.forEach(quotes::add);
-            int total = data.path("total").asInt();
-            if (total > 0 && quotes.size() >= total) break;
+            expectedCount = data.path("total").asInt(expectedCount);
+            if (expectedCount > 0 && quotes.size() >= expectedCount) break;
         }
-        return quotes;
+        return new MarketQuotes(quotes, expectedCount);
+    }
+
+    private BigDecimal median(List<BigDecimal> values) {
+        if (values.isEmpty()) return null;
+        int middle = values.size() / 2;
+        if (values.size() % 2 == 1) return values.get(middle);
+        return values.get(middle - 1).add(values.get(middle)).divide(BigDecimal.valueOf(2));
+    }
+
+    private BigDecimal coverage(int actual, int expected) {
+        return expected <= 0 ? null : BigDecimal.valueOf(actual * 100.0 / expected)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private JsonNode get(String url) {
@@ -166,4 +189,5 @@ public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProv
 
     @FunctionalInterface interface HttpFetcher { String get(String url); }
     @FunctionalInterface interface Sleeper { void sleep(long millis) throws InterruptedException; }
+    private record MarketQuotes(List<JsonNode> quotes, int expectedCount) {}
 }
