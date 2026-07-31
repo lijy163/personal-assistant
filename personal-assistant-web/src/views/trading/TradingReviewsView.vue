@@ -14,6 +14,7 @@
           <el-card><small>数据状态</small><strong>{{completeness(latestReview.dataCompleteness)}}</strong><span>{{latestReview.freshness||'手工数据'}}</span></el-card>
           <el-card><small>最后成功</small><strong class="small-value">{{formatTime(latestReview.lastSuccessAt)}}</strong><span>{{latestReview.dataSource||'MANUAL'}}</span></el-card>
         </div>
+        <TradingMarketDetails v-if="latestReview" :review="latestReview"/>
         <el-card v-if="latestReview" class="conclusion"><template #header>自动结论（不会覆盖人工判断）</template><p>{{latestReview.autoConclusion}}</p><el-divider/><b>人工判断</b><p>{{latestReview.manualJudgment||'尚未填写'}}</p></el-card>
         <el-card><el-table :data="reviews"><el-table-column prop="tradeDate" label="交易日" width="120"/><el-table-column label="类型" width="105"><template #default="s">{{s.row.snapshotType==='FINAL'?'收盘':'盘中'}}</template></el-table-column><el-table-column prop="marketStage" label="阶段"/><el-table-column prop="sentimentScore" label="评分"/><el-table-column prop="risingCount" label="上涨"/><el-table-column prop="fallingCount" label="下跌"/><el-table-column label="状态"><template #default="s"><el-tag :type="s.row.dataCompleteness==='COMPLETE'?'success':'warning'">{{completeness(s.row.dataCompleteness)}}</el-tag></template></el-table-column><el-table-column label="操作" width="150"><template #default="s"><el-button link @click="editReview(s.row)">编辑</el-button><el-button link type="danger" @click="deleteReviewRow(s.row.id)">删除</el-button></template></el-table-column></el-table></el-card>
       </el-tab-pane>
@@ -57,6 +58,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus';
 import * as api from '@/api/tradingReview';
 import type { DailyReview, NextPlan, TradeLog, TradingMistake } from '@/api/tradingReview';
+import TradingMarketDetails from './TradingMarketDetails.vue';
 
 const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
 const now=()=>new Date().toISOString().slice(0,19);

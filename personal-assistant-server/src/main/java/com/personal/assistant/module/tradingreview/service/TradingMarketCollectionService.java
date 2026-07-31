@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 public class TradingMarketCollectionService {
@@ -39,7 +41,7 @@ public class TradingMarketCollectionService {
         TradingDailyReview review = find(userId, tradeDate, snapshotType);
         if (review == null) review = newReview(userId, tradeDate, snapshotType, now);
         try {
-            MarketSnapshot snapshot = provider.fetch(tradeDate);
+            MarketSnapshot snapshot = withTurnoverChange(userId, tradeDate, snapshotType, provider.fetch(tradeDate));
             applySnapshot(review, snapshot);
             SentimentResult result = ruleEngine.evaluate(snapshot);
             review.setSentimentScore(result.score());
@@ -86,6 +88,27 @@ public class TradingMarketCollectionService {
         review.setQuoteTime(value.quoteTime());
         review.setCollectedAt(LocalDateTime.now(SHANGHAI));
         review.setRawMetrics(value.rawMetrics());
+    }
+
+    private MarketSnapshot withTurnoverChange(Long userId, LocalDate tradeDate, String snapshotType,
+                                              MarketSnapshot snapshot) {
+        if (snapshot.turnoverChange() != null || !"FINAL".equals(snapshotType) || snapshot.turnoverAmount() == null)
+            return snapshot;
+        TradingDailyReview previous = mapper.selectOne(new LambdaQueryWrapper<TradingDailyReview>()
+                .eq(TradingDailyReview::getUserId, userId)
+                .eq(TradingDailyReview::getSnapshotType, "FINAL")
+                .lt(TradingDailyReview::getTradeDate, tradeDate)
+                .isNotNull(TradingDailyReview::getTurnoverAmount)
+                .orderByDesc(TradingDailyReview::getTradeDate).last("limit 1"));
+        if (previous == null || previous.getTurnoverAmount() == null || previous.getTurnoverAmount().signum() == 0)
+            return snapshot;
+        BigDecimal change = snapshot.turnoverAmount().subtract(previous.getTurnoverAmount())
+                .multiply(BigDecimal.valueOf(100)).divide(previous.getTurnoverAmount(), 2, RoundingMode.HALF_UP);
+        return new MarketSnapshot(snapshot.shanghaiChange(), snapshot.shenzhenChange(), snapshot.chinextChange(),
+                snapshot.risingCount(), snapshot.fallingCount(), snapshot.flatCount(), snapshot.limitUpCount(),
+                snapshot.limitDownCount(), snapshot.brokenBoardCount(), snapshot.brokenBoardRate(), snapshot.maxStreak(),
+                snapshot.turnoverAmount(), change, snapshot.industrySectors(), snapshot.conceptSectors(), snapshot.source(),
+                snapshot.quoteTime(), snapshot.rawMetrics());
     }
 
     private TradingDailyReview find(Long userId, LocalDate date, String type) {

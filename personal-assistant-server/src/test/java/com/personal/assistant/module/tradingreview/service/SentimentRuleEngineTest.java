@@ -20,6 +20,9 @@ class SentimentRuleEngineTest {
         assertEquals("COMPLETE", result.completeness());
         assertTrue(result.dimensionScores().contains("breadth"));
         assertEquals(SentimentRuleEngine.VERSION, result.ruleVersion());
+        assertEquals("V2.0", result.ruleVersion());
+        assertTrue(result.dimensionScores().contains("主要指数"));
+        assertTrue(result.conclusion().contains("放量8.00%"));
     }
 
     @Test

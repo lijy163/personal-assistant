@@ -23,7 +23,7 @@ import java.util.List;
 public class EastMoneyTradingMarketDataProvider implements TradingMarketDataProvider {
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
     private static final int MARKET_PAGE_SIZE = 500;
-    private static final int MAX_MARKET_PAGES = 20;
+    private static final int MAX_MARKET_PAGES = 1;
     private static final int MAX_ATTEMPTS = 4;
     private static final long[] RETRY_DELAYS_MILLIS = {0, 400, 1_000, 2_000};
     private static final String[] EASTMONEY_HOSTS = {

@@ -1,6 +1,9 @@
 package com.personal.assistant.module.tradingreview.service;
 
+import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
+import com.personal.assistant.module.tradingreview.dto.SentimentResult;
 import com.personal.assistant.module.tradingreview.entity.TradingDailyReview;
+import java.math.BigDecimal;
 import com.personal.assistant.module.tradingreview.mapper.TradingDailyReviewMapper;
 import com.personal.assistant.module.tradingreview.provider.TradingMarketDataProvider;
 import org.junit.jupiter.api.Test;
@@ -11,6 +14,29 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class TradingMarketCollectionServiceTest {
+    @Test
+    void finalSnapshotCalculatesTurnoverChangeFromPreviousFinalReview() {
+        TradingDailyReviewMapper mapper = mock(TradingDailyReviewMapper.class);
+        TradingMarketDataProvider provider = mock(TradingMarketDataProvider.class);
+        SentimentRuleEngine rules = mock(SentimentRuleEngine.class);
+        TradingDailyReview previous = new TradingDailyReview();
+        previous.setTurnoverAmount(new BigDecimal("1000"));
+        MarketSnapshot snapshot = new MarketSnapshot(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                3000, 1500, 100, 80, 5, 10, new BigDecimal("12"), 6,
+                new BigDecimal("1200"), null, "行业", "概念", "TEST", LocalDateTime.now(), "{}");
+        when(mapper.selectOne(any())).thenReturn(null, previous);
+        when(provider.fetch(any())).thenReturn(snapshot);
+        when(rules.evaluate(any())).thenReturn(new SentimentResult(new BigDecimal("60"), "震荡",
+                new BigDecimal("40"), "结论", "V2.0", "{}", "COMPLETE"));
+
+        var result = new TradingMarketCollectionService(mapper, provider, rules,
+                new TradingCalendarService()).refresh(7L, LocalDate.of(2026, 7, 30), "FINAL");
+
+        assertTrue(result.fresh());
+        assertEquals(new BigDecimal("20.00"), result.review().getTurnoverChange());
+        verify(mapper).insert(result.review());
+    }
+
     @Test
     void collectionFailureKeepsOldDataAndManualJudgment() {
         TradingDailyReviewMapper mapper = mock(TradingDailyReviewMapper.class);

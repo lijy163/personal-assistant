@@ -9,13 +9,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TradingMarketProvidersWiringTest {
     @Test
-    void springBuildsDecoratorAndSelectsItAsPrimaryProvider() {
+    void springBuildsProviderChainAndSelectsDetailedProviderAsPrimary() {
         try (var context = new AnnotationConfigApplicationContext()) {
             context.registerBean(ObjectMapper.class);
-            context.register(EastMoneyTradingMarketDataProvider.class, EastMoneyBoardMetricsDataProvider.class);
+            context.register(EastMoneyTradingMarketDataProvider.class,
+                    EastMoneyBoardMetricsDataProvider.class,
+                    EastMoneyDetailedMarketDataProvider.class);
             context.refresh();
             assertNotNull(context.getBean(EastMoneyTradingMarketDataProvider.class));
-            assertInstanceOf(EastMoneyBoardMetricsDataProvider.class,
+            assertNotNull(context.getBean(EastMoneyBoardMetricsDataProvider.class));
+            assertInstanceOf(EastMoneyDetailedMarketDataProvider.class,
                     context.getBean(TradingMarketDataProvider.class));
         }
     }
