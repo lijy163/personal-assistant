@@ -23,11 +23,18 @@ export interface TradingMistake { id:number; tradeLogId?:number; occurredDate:st
 export type MistakePayload = Omit<TradingMistake, 'id'>;
 export interface TradingStats { closedTrades:number; winningTrades:number; losingTrades:number; winRate:number; averageReturn:number; averageWin:number; averageLoss:number; profitLossRatio:number; realizedProfit:number; unrealizedProfit:number; totalFees:number; frequentErrors:{category:string;count:number}[]; }
 export interface CollectionResult { review:DailyReview; fresh:boolean; message:string; lastSuccessAt?:string; }
+export interface ReviewAnalytics {
+  fiveDayTrend:{tradeDate:string;sentimentScore?:number;risingCount?:number;fallingCount?:number;limitUpCount?:number;limitDownCount?:number;brokenBoardRate?:number;maxStreak?:number;turnoverAmount?:number;turnoverChange?:number}[];
+  intradayTimeline:{quoteTime:string;sentimentScore?:number;marketStage?:string;risingCount?:number;fallingCount?:number;limitUpCount?:number;limitDownCount?:number;brokenBoardRate?:number;turnoverAmount?:number}[];
+  advancement:{currentDate?:string;previousDate?:string;previousFirstBoards:number;firstToSecond:number;firstToSecondRate:number;previousSecondBoards:number;secondToThird:number;secondToThirdRate:number;status:string};
+  execution:{duePlans:number;completedPlans:number;planCompletionRate:number;trades:number;plannedTrades:number;plannedTradeRate:number};
+}
 
 export const listReviews=()=>http.get<unknown,{data:DailyReview[]}>('/trading-reviews/reviews');
 export const saveReview=(data:ReviewPayload,id?:number)=>id?http.put(`/trading-reviews/reviews/${id}`,data):http.post('/trading-reviews/reviews',data);
 export const removeReview=(id:number)=>http.delete(`/trading-reviews/reviews/${id}`);
 export const refreshMarket=(tradeDate:string,snapshotType:string)=>http.post<unknown,{data:CollectionResult}>('/trading-reviews/market/refresh',null,{params:{tradeDate,snapshotType}});
+export const getReviewAnalytics=(tradeDate:string)=>http.get<unknown,{data:ReviewAnalytics}>('/trading-reviews/analytics',{params:{tradeDate}});
 export const listTrades=()=>http.get<unknown,{data:TradeLog[]}>('/trading-reviews/trades');
 export const getTrade=(id:number)=>http.get<unknown,{data:TradeDetail}>(`/trading-reviews/trades/${id}`);
 export const saveTrade=(data:TradePayload,id?:number)=>id?http.put(`/trading-reviews/trades/${id}`,data):http.post('/trading-reviews/trades',data);

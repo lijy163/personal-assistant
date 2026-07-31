@@ -73,6 +73,7 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         JsonNode limitUpPool = safely("涨停池明细", () -> limitUpPool(tradeDate), warnings);
         rankings.set("limitUp", validArray(limitUpPool) ? limitUpSectorRanking(limitUpPool) : objectMapper.createArrayNode());
         raw.set("streakLadder", validArray(limitUpPool) ? streakLadder(limitUpPool) : objectMapper.createArrayNode());
+        raw.set("limitUpStocks", validArray(limitUpPool) ? limitUpStocks(limitUpPool) : objectMapper.createArrayNode());
         Integer limitDown = safely("跌停池", () -> limitDownCount(tradeDate), warnings);
         raw.put("degraded", !warnings.isEmpty());
         return new MarketSnapshot(base.shanghaiChange(), base.shenzhenChange(), base.chinextChange(),
@@ -123,6 +124,13 @@ public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataPro
         ArrayNode result = objectMapper.createArrayNode();
         counts.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(10).forEach(entry -> result.addObject().put("name", entry.getKey()).put("limitUpCount", entry.getValue()));
+        return result;
+    }
+
+    private ArrayNode limitUpStocks(JsonNode pool) {
+        ArrayNode result=objectMapper.createArrayNode();
+        for(JsonNode stock:pool){int fallback=stock.path("zttj").path("ct").asInt(1);int streak=Math.max(1,stock.path("lbc").asInt(fallback));
+            result.addObject().put("code",stock.path("c").asText()).put("name",stock.path("n").asText()).put("streak",streak);}
         return result;
     }
 

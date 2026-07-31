@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-create-trading-snapshot-point
+      author: personal-assistant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE trading_market_snapshot_point (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, trade_date date NOT NULL,
+                snapshot_type varchar(20) NOT NULL, quote_time timestamp NOT NULL,
+                sentiment_score numeric(12,4), market_stage varchar(30), rising_count int, falling_count int,
+                limit_up_count int, limit_down_count int, broken_board_rate numeric(12,4), max_streak int,
+                turnover_amount numeric(22,4), raw_metrics text, created_at timestamp NOT NULL
+              );
+              CREATE INDEX idx_market_point_user_date ON trading_market_snapshot_point(user_id, trade_date, quote_time);

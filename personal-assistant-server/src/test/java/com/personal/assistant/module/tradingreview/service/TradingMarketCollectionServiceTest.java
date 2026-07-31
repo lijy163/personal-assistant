@@ -30,7 +30,7 @@ class TradingMarketCollectionServiceTest {
                 new BigDecimal("40"), "结论", "V2.0", "{}", "COMPLETE"));
 
         var result = new TradingMarketCollectionService(mapper, provider, rules,
-                new TradingCalendarService()).refresh(7L, LocalDate.of(2026, 7, 30), "FINAL");
+                new TradingCalendarService(), mock(com.personal.assistant.module.tradingreview.mapper.TradingMarketSnapshotPointMapper.class)).refresh(7L, LocalDate.of(2026, 7, 30), "FINAL");
 
         assertTrue(result.fresh());
         assertEquals(new BigDecimal("20.00"), result.review().getTurnoverChange());
@@ -49,7 +49,7 @@ class TradingMarketCollectionServiceTest {
         when(provider.fetch(any())).thenThrow(new RuntimeException("network down"));
 
         var result = new TradingMarketCollectionService(mapper, provider, mock(SentimentRuleEngine.class),
-                new TradingCalendarService()).refresh(7L, LocalDate.of(2026,7,30), "FINAL");
+                new TradingCalendarService(), mock(com.personal.assistant.module.tradingreview.mapper.TradingMarketSnapshotPointMapper.class)).refresh(7L, LocalDate.of(2026,7,30), "FINAL");
 
         assertFalse(result.fresh());
         assertEquals(3000, result.review().getRisingCount());

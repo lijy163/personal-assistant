@@ -19,13 +19,14 @@ public class TradingReviewController {
     private final TradingMarketCollectionService collectionService;
     private final TradingStatisticsService statisticsService;
     private final TradingExecutionStateService executionStateService;
+    private final TradingReviewAnalyticsService analyticsService;
 
     public TradingReviewController(TradingReviewService service, TradingReviewUpsertService reviewUpsertService,
                                    TradingMarketCollectionService collectionService, TradingStatisticsService statisticsService,
-                                   TradingExecutionStateService executionStateService) {
+                                   TradingExecutionStateService executionStateService, TradingReviewAnalyticsService analyticsService) {
         this.service = service; this.reviewUpsertService = reviewUpsertService;
         this.collectionService = collectionService; this.statisticsService = statisticsService;
-        this.executionStateService = executionStateService;
+        this.executionStateService = executionStateService; this.analyticsService = analyticsService;
     }
 
     private Long uid(){return SecurityContextHelper.currentUserId();}
@@ -35,6 +36,7 @@ public class TradingReviewController {
     @PutMapping("/reviews/{id}") public ApiResponse<Long> updateReview(@PathVariable Long id,@Valid @RequestBody ReviewRequest request){return ApiResponse.success(service.saveReview(uid(),id,request));}
     @DeleteMapping("/reviews/{id}") public ApiResponse<Void> deleteReview(@PathVariable Long id){service.deleteReview(uid(),id);return ApiResponse.success();}
     @PostMapping("/market/refresh") public ApiResponse<CollectionResponse> refresh(@RequestParam(required=false)@DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate tradeDate,@RequestParam(required=false)String snapshotType){return ApiResponse.success(collectionService.refresh(uid(),tradeDate,snapshotType));}
+    @GetMapping("/analytics") public ApiResponse<TradingReviewAnalyticsResponse> analytics(@RequestParam(required=false)@DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate tradeDate){return ApiResponse.success(analyticsService.analytics(uid(),tradeDate));}
     @GetMapping("/trades") public ApiResponse<List<TradingLog>> trades(){return ApiResponse.success(service.trades(uid()));}
     @GetMapping("/trades/{id}") public ApiResponse<TradeDetailResponse> trade(@PathVariable Long id){return ApiResponse.success(service.trade(uid(),id));}
     @PostMapping("/trades") public ApiResponse<Long> createTrade(@Valid @RequestBody TradeRequest request){return ApiResponse.success(service.saveTrade(uid(),null,request));}

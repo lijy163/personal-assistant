@@ -6,6 +6,8 @@ import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
 import com.personal.assistant.module.tradingreview.dto.SentimentResult;
 import com.personal.assistant.module.tradingreview.entity.TradingDailyReview;
 import com.personal.assistant.module.tradingreview.mapper.TradingDailyReviewMapper;
+import com.personal.assistant.module.tradingreview.mapper.TradingMarketSnapshotPointMapper;
+import com.personal.assistant.module.tradingreview.entity.TradingMarketSnapshotPoint;
 import com.personal.assistant.module.tradingreview.provider.TradingMarketDataProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +26,16 @@ public class TradingMarketCollectionService {
     private final TradingMarketDataProvider provider;
     private final SentimentRuleEngine ruleEngine;
     private final TradingCalendarService calendar;
+    private final TradingMarketSnapshotPointMapper points;
 
     public TradingMarketCollectionService(TradingDailyReviewMapper mapper, TradingMarketDataProvider provider,
-                                          SentimentRuleEngine ruleEngine, TradingCalendarService calendar) {
+                                          SentimentRuleEngine ruleEngine, TradingCalendarService calendar,
+                                          TradingMarketSnapshotPointMapper points) {
         this.mapper = mapper;
         this.provider = provider;
         this.ruleEngine = ruleEngine;
         this.calendar = calendar;
+        this.points = points;
     }
 
     @Transactional
@@ -58,6 +63,7 @@ public class TradingMarketCollectionService {
             review.setFreshness("FRESH");
             review.setUpdatedAt(now);
             save(review);
+            savePoint(userId, tradeDate, snapshotType, snapshot, result, now);
             return new CollectionResponse(review, true, result.completeness().equals("COMPLETE") ? "行情刷新成功" : "行情已刷新，部分指标需手工补充", now);
         } catch (RuntimeException exception) {
             review.setCollectionStatus("FAILED");
@@ -130,6 +136,14 @@ public class TradingMarketCollectionService {
         review.setCreatedAt(now);
         review.setUpdatedAt(now);
         return review;
+    }
+
+    private void savePoint(Long uid, LocalDate date, String type, MarketSnapshot snapshot, SentimentResult result, LocalDateTime now) {
+        TradingMarketSnapshotPoint point=new TradingMarketSnapshotPoint();point.setUserId(uid);point.setTradeDate(date);point.setSnapshotType(type);
+        point.setQuoteTime(snapshot.quoteTime());point.setSentimentScore(result.score());point.setMarketStage(result.stage());
+        point.setRisingCount(snapshot.risingCount());point.setFallingCount(snapshot.fallingCount());point.setLimitUpCount(snapshot.limitUpCount());
+        point.setLimitDownCount(snapshot.limitDownCount());point.setBrokenBoardRate(snapshot.brokenBoardRate());point.setMaxStreak(snapshot.maxStreak());
+        point.setTurnoverAmount(snapshot.turnoverAmount());point.setRawMetrics(snapshot.rawMetrics());point.setCreatedAt(now);points.insert(point);
     }
 
     private void save(TradingDailyReview review) {
