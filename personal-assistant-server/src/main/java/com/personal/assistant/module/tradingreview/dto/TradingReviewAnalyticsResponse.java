@@ -16,5 +16,8 @@ public record TradingReviewAnalyticsResponse(
                               Integer firstToSecond, BigDecimal firstToSecondRate, Integer previousSecondBoards,
                               Integer secondToThird, BigDecimal secondToThirdRate, String status) {}
     public record Execution(long duePlans, long completedPlans, BigDecimal planCompletionRate,
-                            long trades, long plannedTrades, BigDecimal plannedTradeRate) {}
+                            long trades, long plannedTrades, BigDecimal plannedTradeRate,
+                            long alertEvents, long alertLinkedTrades, BigDecimal alertTradeRate,
+                            BigDecimal averageAlertResponseMinutes, BigDecimal averagePositionDeviation,
+                            String status) {}
 }

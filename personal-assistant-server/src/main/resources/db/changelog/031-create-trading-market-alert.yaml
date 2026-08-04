@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-create-trading-market-alert
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: trading_market_alert_rule
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: rule_type, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: snapshot_type, type: varchar(20), defaultValue: ANY, constraints: { nullable: false } }
+              - column: { name: metric_key, type: varchar(60), constraints: { nullable: false } }
+              - column: { name: direction, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: threshold_value, type: "numeric(18,4)", constraints: { nullable: false } }
+              - column: { name: sector_name, type: varchar(120) }
+              - column: { name: sector_level, type: int }
+              - column: { name: title, type: varchar(180), constraints: { nullable: false } }
+              - column: { name: note, type: text }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: once_only, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(30), defaultValue: MONITORING, constraints: { nullable: false } }
+              - column: { name: valid_from, type: date }
+              - column: { name: valid_to, type: date }
+              - column: { name: last_checked_at, type: timestamp }
+              - column: { name: last_triggered_at, type: timestamp }
+              - column: { name: last_observed_value, type: "numeric(18,4)" }
+              - column: { name: last_review_id, type: bigint }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: trading_market_alert_rule
+            baseColumnNames: last_review_id
+            referencedTableName: trading_daily_review
+            referencedColumnNames: id
+            constraintName: fk_trading_market_alert_rule_review
+            onDelete: SET NULL
+        - createIndex:
+            tableName: trading_market_alert_rule
+            indexName: idx_trading_market_alert_rule_user_enabled
+            columns:
+              - column: { name: user_id }
+              - column: { name: enabled }
+              - column: { name: updated_at }
+        - createTable:
+            tableName: trading_market_alert_event
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: rule_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: review_id, type: bigint }
+              - column: { name: trade_date, type: date, constraints: { nullable: false } }
+              - column: { name: snapshot_type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: rule_type, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: metric_key, type: varchar(60), constraints: { nullable: false } }
+              - column: { name: direction, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: threshold_value, type: "numeric(18,4)", constraints: { nullable: false } }
+              - column: { name: observed_value, type: "numeric(18,4)", constraints: { nullable: false } }
+              - column: { name: sector_name, type: varchar(120) }
+              - column: { name: title, type: varchar(180), constraints: { nullable: false } }
+              - column: { name: content, type: text }
+              - column: { name: notification_status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: notification_message, type: text }
+              - column: { name: triggered_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: trading_market_alert_event
+            baseColumnNames: rule_id
+            referencedTableName: trading_market_alert_rule
+            referencedColumnNames: id
+            constraintName: fk_trading_market_alert_event_rule
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: trading_market_alert_event
+            baseColumnNames: review_id
+            referencedTableName: trading_daily_review
+            referencedColumnNames: id
+            constraintName: fk_trading_market_alert_event_review
+            onDelete: SET NULL
+        - createIndex:
+            tableName: trading_market_alert_event
+            indexName: idx_trading_market_alert_event_user_time
+            columns:
+              - column: { name: user_id }
+              - column: { name: triggered_at }

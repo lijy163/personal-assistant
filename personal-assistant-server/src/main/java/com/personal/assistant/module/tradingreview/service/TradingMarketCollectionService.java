@@ -32,16 +32,19 @@ public class TradingMarketCollectionService {
     private final TradingCalendarService calendar;
     private final TradingMarketSnapshotPointMapper points;
     private final ObjectMapper objectMapper;
+    private final TradingMarketAlertService alertService;
 
     public TradingMarketCollectionService(TradingDailyReviewMapper mapper, TradingMarketDataProvider provider,
                                           SentimentRuleEngine ruleEngine, TradingCalendarService calendar,
-                                          TradingMarketSnapshotPointMapper points, ObjectMapper objectMapper) {
+                                          TradingMarketSnapshotPointMapper points, ObjectMapper objectMapper,
+                                          TradingMarketAlertService alertService) {
         this.mapper = mapper;
         this.provider = provider;
         this.ruleEngine = ruleEngine;
         this.calendar = calendar;
         this.points = points;
         this.objectMapper = objectMapper;
+        this.alertService = alertService;
     }
 
     @Transactional
@@ -71,6 +74,7 @@ public class TradingMarketCollectionService {
             review.setUpdatedAt(now);
             save(review);
             savePoint(userId, tradeDate, snapshotType, snapshot, result, now);
+            alertService.scanReview(userId, review);
             return new CollectionResponse(review, true, result.completeness().equals("COMPLETE") ? "行情刷新成功" : "行情已刷新，部分指标需手工补充", now);
         } catch (RuntimeException exception) {
             review.setCollectionStatus("FAILED");

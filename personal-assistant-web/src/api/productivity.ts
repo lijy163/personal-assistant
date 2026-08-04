@@ -15,4 +15,4 @@ export const archiveInbox=(id:number)=>http.patch(`/inbox/${id}/archive`);
 export const getDailyDashboard=()=>http.get<unknown,{data:DailyDashboard}>('/dashboard/daily');
 export const getDailyInspiration=()=>http.get<unknown,{data:DailyInspiration}>('/dashboard/daily-inspiration');
 export const listReports=()=>http.get<unknown,{data:GeneratedReport[]}>('/reports');
-export const generateReport=(type:string)=>http.post<unknown,{data:GeneratedReport}>('/reports/generate',null,{params:{type}});
+export const generateReport=(type:string,reference?:string)=>http.post<unknown,{data:GeneratedReport}>('/reports/generate',null,{params:{type,reference}});

@@ -1,3 +1,3 @@
 package com.personal.assistant.module.tradingreview.dto;
 import jakarta.validation.constraints.*;import java.math.*;import java.time.*;
-public record TradeRequest(Long watchItemId,@NotBlank String stockCode,@NotBlank String stockName,String status,String strategy,String buyLogic,String sellLogic,Boolean planned,String planExecutionNote,String questionBuyLogic,String questionSealFunds,String questionTakeoverFunds,BigDecimal latestPrice,LocalDateTime openedAt,LocalDateTime closedAt,String notes){}
+public record TradeRequest(Long watchItemId,Long sourceAlertEventId,Long sourceMarketAlertEventId,String signalType,String signalReason,@NotBlank String stockCode,@NotBlank String stockName,String status,String strategy,String buyLogic,String sellLogic,Boolean planned,String planExecutionNote,String questionBuyLogic,String questionSealFunds,String questionTakeoverFunds,BigDecimal latestPrice,LocalDateTime openedAt,LocalDateTime closedAt,String notes){}

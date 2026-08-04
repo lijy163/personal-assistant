@@ -20,13 +20,16 @@ public class TradingReviewController {
     private final TradingStatisticsService statisticsService;
     private final TradingExecutionStateService executionStateService;
     private final TradingReviewAnalyticsService analyticsService;
+    private final TradingAlertService alertService;
+    private final TradingMarketAlertService marketAlertService;
 
     public TradingReviewController(TradingReviewService service, TradingReviewUpsertService reviewUpsertService,
                                    TradingMarketCollectionService collectionService, TradingStatisticsService statisticsService,
-                                   TradingExecutionStateService executionStateService, TradingReviewAnalyticsService analyticsService) {
+                                   TradingExecutionStateService executionStateService, TradingReviewAnalyticsService analyticsService,
+                                   TradingAlertService alertService, TradingMarketAlertService marketAlertService) {
         this.service = service; this.reviewUpsertService = reviewUpsertService;
         this.collectionService = collectionService; this.statisticsService = statisticsService;
-        this.executionStateService = executionStateService; this.analyticsService = analyticsService;
+        this.executionStateService = executionStateService; this.analyticsService = analyticsService; this.alertService = alertService; this.marketAlertService = marketAlertService;
     }
 
     private Long uid(){return SecurityContextHelper.currentUserId();}
@@ -48,6 +51,20 @@ public class TradingReviewController {
     @PostMapping("/plans") public ApiResponse<Long> createPlan(@Valid @RequestBody PlanRequest request){return ApiResponse.success(service.savePlan(uid(),null,request));}
     @PutMapping("/plans/{id}") public ApiResponse<Long> updatePlan(@PathVariable Long id,@Valid @RequestBody PlanRequest request){return ApiResponse.success(service.savePlan(uid(),id,request));}
     @DeleteMapping("/plans/{id}") public ApiResponse<Void> deletePlan(@PathVariable Long id){service.deletePlan(uid(),id);return ApiResponse.success();}
+    @GetMapping("/alerts/rules") public ApiResponse<List<TradingAlertRule>> alertRules(@RequestParam(required=false)Boolean enabled){return ApiResponse.success(alertService.listRules(uid(),enabled));}
+    @PostMapping("/alerts/rules") public ApiResponse<Long> createAlertRule(@Valid @RequestBody TradingAlertRuleRequest request){return ApiResponse.success(alertService.saveRule(uid(),null,request));}
+    @PutMapping("/alerts/rules/{id}") public ApiResponse<Long> updateAlertRule(@PathVariable Long id,@Valid @RequestBody TradingAlertRuleRequest request){return ApiResponse.success(alertService.saveRule(uid(),id,request));}
+    @PatchMapping("/alerts/rules/{id}/enabled") public ApiResponse<Void> toggleAlertRule(@PathVariable Long id,@RequestParam boolean enabled){alertService.toggleRule(uid(),id,enabled);return ApiResponse.success();}
+    @DeleteMapping("/alerts/rules/{id}") public ApiResponse<Void> deleteAlertRule(@PathVariable Long id){alertService.deleteRule(uid(),id);return ApiResponse.success();}
+    @GetMapping("/alerts/events") public ApiResponse<List<TradingAlertEvent>> alertEvents(@RequestParam(required=false)Long ruleId){return ApiResponse.success(alertService.listEvents(uid(),ruleId));}
+    @PostMapping("/alerts/scan") public ApiResponse<TradingAlertScanResponse> scanAlerts(){return ApiResponse.success(alertService.scanUser(uid()));}
+    @GetMapping("/market-alerts/rules") public ApiResponse<List<TradingMarketAlertRule>> marketAlertRules(@RequestParam(required=false)Boolean enabled){return ApiResponse.success(marketAlertService.listRules(uid(),enabled));}
+    @PostMapping("/market-alerts/rules") public ApiResponse<Long> createMarketAlertRule(@Valid @RequestBody TradingMarketAlertRuleRequest request){return ApiResponse.success(marketAlertService.saveRule(uid(),null,request));}
+    @PutMapping("/market-alerts/rules/{id}") public ApiResponse<Long> updateMarketAlertRule(@PathVariable Long id,@Valid @RequestBody TradingMarketAlertRuleRequest request){return ApiResponse.success(marketAlertService.saveRule(uid(),id,request));}
+    @PatchMapping("/market-alerts/rules/{id}/enabled") public ApiResponse<Void> toggleMarketAlertRule(@PathVariable Long id,@RequestParam boolean enabled){marketAlertService.toggleRule(uid(),id,enabled);return ApiResponse.success();}
+    @DeleteMapping("/market-alerts/rules/{id}") public ApiResponse<Void> deleteMarketAlertRule(@PathVariable Long id){marketAlertService.deleteRule(uid(),id);return ApiResponse.success();}
+    @GetMapping("/market-alerts/events") public ApiResponse<List<TradingMarketAlertEvent>> marketAlertEvents(@RequestParam(required=false)Long ruleId){return ApiResponse.success(marketAlertService.listEvents(uid(),ruleId));}
+    @PostMapping("/market-alerts/scan") public ApiResponse<TradingMarketAlertScanResponse> scanMarketAlerts(){return ApiResponse.success(marketAlertService.scanUser(uid()));}
     @GetMapping("/mistakes") public ApiResponse<List<TradingMistake>> mistakes(){return ApiResponse.success(service.mistakes(uid()));}
     @PostMapping("/mistakes") public ApiResponse<Long> createMistake(@Valid @RequestBody MistakeRequest request){return ApiResponse.success(service.saveMistake(uid(),null,request));}
     @PutMapping("/mistakes/{id}") public ApiResponse<Long> updateMistake(@PathVariable Long id,@Valid @RequestBody MistakeRequest request){return ApiResponse.success(service.saveMistake(uid(),id,request));}

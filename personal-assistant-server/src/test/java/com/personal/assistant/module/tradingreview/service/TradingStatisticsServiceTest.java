@@ -4,6 +4,7 @@ import com.personal.assistant.module.tradingreview.dto.TradeDetailResponse;
 import com.personal.assistant.module.tradingreview.dto.TradeMetrics;
 import com.personal.assistant.module.tradingreview.entity.TradingLog;
 import com.personal.assistant.module.tradingreview.mapper.TradingMistakeMapper;
+import com.personal.assistant.module.tradingreview.provider.TradePriceRangeProvider;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,6 +16,7 @@ class TradingStatisticsServiceTest {
     void calculatesWinRateAverageReturnAndProfitLossRatio() {
         TradingReviewService reviews = mock(TradingReviewService.class);
         TradingMistakeMapper mistakes = mock(TradingMistakeMapper.class);
+        TradePriceRangeProvider ranges = mock(TradePriceRangeProvider.class);
         TradingLog win = trade(1L); TradingLog loss = trade(2L); TradingLog open = trade(3L);
         when(reviews.trades(7L)).thenReturn(List.of(win, loss, open));
         when(reviews.trade(7L, 1L)).thenReturn(detail(win, "200", "20", "0"));
@@ -22,7 +24,7 @@ class TradingStatisticsServiceTest {
         when(reviews.trade(7L, 3L)).thenReturn(detail(open, "0", "4", "100"));
         when(mistakes.selectList(any())).thenReturn(List.of());
 
-        var result = new TradingStatisticsService(reviews, mistakes).calculate(7L);
+        var result = new TradingStatisticsService(reviews, mistakes, ranges).calculate(7L);
 
         assertEquals(new BigDecimal("50.00"), result.winRate());
         assertEquals(new BigDecimal("5.0000"), result.averageReturn());

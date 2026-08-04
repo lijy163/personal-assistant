@@ -1,3 +1,42 @@
-<template><div><el-card><template #header><div class="header"><span>自动报告</span><div><el-button @click="generate('WEEKLY')">生成本周周报</el-button><el-button type="primary" @click="generate('MONTHLY')">生成本月月报</el-button></div></div></template><el-alert title="报告由任务、学习、开发日志和账单的确定性统计生成，不调用 AI，也不包含投资建议。" type="info" :closable="false"/><el-table :data="reports" @row-click="selectReport"><el-table-column prop="title" label="标题"/><el-table-column prop="reportType" label="类型" width="100"/><el-table-column prop="periodStart" label="开始" width="120"/><el-table-column prop="periodEnd" label="结束" width="120"/><el-table-column label="操作" width="90"><template #default="{row}"><el-button link type="primary" @click.stop="selected=row">查看</el-button></template></el-table-column></el-table></el-card><el-drawer v-model="visible" title="报告详情" size="52%"><pre v-if="selected" class="markdown">{{selected.markdownContent}}</pre></el-drawer></div></template>
-<script setup lang="ts">import{computed,onMounted,ref}from'vue';import{generateReport,listReports,type GeneratedReport}from'@/api/productivity';const reports=ref<GeneratedReport[]>([]),selected=ref<GeneratedReport>();const visible=computed({get:()=>!!selected.value,set:value=>{if(!value)selected.value=undefined;}});function selectReport(row:GeneratedReport){selected.value=row;}async function load(){reports.value=(await listReports()).data;}async function generate(type:string){selected.value=(await generateReport(type)).data;await load();}onMounted(load);</script>
-<style scoped>.header{display:flex;justify-content:space-between;align-items:center}.markdown{white-space:pre-wrap;line-height:1.8;background:#f6f8fa;padding:18px;border-radius:8px}</style>
+<template>
+  <div>
+    <el-card>
+      <template #header>
+        <div class="header">
+          <span>自动报告</span>
+          <div>
+            <el-button @click="generate('WEEKLY')">生成本周周报</el-button>
+            <el-button @click="generate('MONTHLY')">生成本月月报</el-button>
+            <el-button type="primary" @click="generate('TRADING_DAILY')">生成交易日报</el-button>
+          </div>
+        </div>
+      </template>
+      <el-alert title="报告由确定性统计生成；交易日报会整理市场复盘、预警、计划和观察项，不输出确定性投资建议。" type="info" :closable="false"/>
+      <el-table :data="reports" @row-click="selectReport">
+        <el-table-column prop="title" label="标题"/>
+        <el-table-column prop="reportType" label="类型" width="135"/>
+        <el-table-column prop="periodStart" label="开始" width="120"/>
+        <el-table-column prop="periodEnd" label="结束" width="120"/>
+        <el-table-column label="操作" width="90"><template #default="{row}"><el-button link type="primary" @click.stop="selected=row">查看</el-button></template></el-table-column>
+      </el-table>
+    </el-card>
+    <el-drawer v-model="visible" title="报告详情" size="52%">
+      <pre v-if="selected" class="markdown">{{selected.markdownContent}}</pre>
+    </el-drawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { generateReport, listReports, type GeneratedReport } from '@/api/productivity';
+const reports = ref<GeneratedReport[]>([]), selected = ref<GeneratedReport>();
+const visible = computed({ get: () => !!selected.value, set: value => { if (!value) selected.value = undefined; } });
+function selectReport(row: GeneratedReport) { selected.value = row; }
+async function load() { reports.value = (await listReports()).data; }
+async function generate(type: string) { selected.value = (await generateReport(type)).data; await load(); }
+onMounted(load);
+</script>
+
+<style scoped>
+.header{display:flex;justify-content:space-between;align-items:center}.markdown{white-space:pre-wrap;line-height:1.8;background:#f6f8fa;padding:18px;border-radius:8px}
+</style>

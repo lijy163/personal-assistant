@@ -1,0 +1,10 @@
+package com.personal.assistant.module.tradingreview.provider;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Optional;
+
+public interface TradePriceRangeProvider {
+    Optional<PriceRange> range(String stockCode, LocalDate start, LocalDate end);
+    record PriceRange(BigDecimal highestPrice, BigDecimal lowestPrice, String source) {}
+}
