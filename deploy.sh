@@ -7,6 +7,10 @@ DEPLOY_DIR="$PROJECT_DIR/deploy"
 ENV_FILE="$DEPLOY_DIR/.env"
 BRANCH="${DEPLOY_BRANCH:-master}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8080/api/system/health}"
+SKIP_GIT_PULL="${SKIP_GIT_PULL:-0}"
+
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-1}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -25,19 +29,33 @@ docker compose version >/dev/null 2>&1 || fail "未安装 Docker Compose 插件"
 
 cd "$PROJECT_DIR"
 
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-  fail "服务器 Git 工作区存在已跟踪文件改动，请先处理后再发布"
-fi
-
 compose() {
   docker compose --project-directory "$DEPLOY_DIR" \
     --env-file "$ENV_FILE" \
     -f "$DEPLOY_DIR/docker-compose.yml" "$@"
 }
 
+print_diagnostics() {
+  log "Docker Compose 服务状态"
+  compose ps || true
+
+  log "后端日志 backend（最近 200 行）"
+  compose logs --tail=200 backend || true
+
+  log "数据库日志 postgres（最近 80 行）"
+  compose logs --tail=80 postgres || true
+
+  log "Nginx 日志 nginx（最近 80 行）"
+  compose logs --tail=80 nginx || true
+}
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  fail "服务器 Git 工作区存在已跟踪文件改动，请先处理后再发布。临时热修后可用 git diff 查看差异。"
+fi
+
 if compose ps --status running --services 2>/dev/null | grep -qx backend; then
   log "备份当前数据库和应用文件"
-  compose exec -T backend /app/scripts/backup.sh
+  compose exec -T backend /app/scripts/backup.sh || fail "发布前备份失败"
 else
   log "后端尚未运行，跳过发布前备份"
 fi
@@ -62,16 +80,29 @@ fetch_origin() {
       sleep "$delay"
     fi
   done
-  fail "拉取 origin/$BRANCH 失败。建议将 origin 切换为 ssh.github.com:443 后重试"
+  fail "拉取 origin/$BRANCH 失败。可先在服务器热修文件后用 SKIP_GIT_PULL=1 ./deploy.sh 临时发布；长期建议切换到国内代码仓库或配置 GitHub 加速。"
 }
 
-fetch_origin
+if [ "$SKIP_GIT_PULL" = "1" ]; then
+  log "SKIP_GIT_PULL=1，跳过 git 拉取，使用服务器当前代码发布"
+else
+  fetch_origin
+fi
 
 log "校验 Docker Compose 配置"
 compose config --quiet
 
-log "构建并启动服务"
-compose up -d --build
+log "构建服务镜像（BuildKit=${DOCKER_BUILDKIT}）"
+if ! compose build --progress=plain; then
+  print_diagnostics
+  fail "Docker 镜像构建失败"
+fi
+
+log "启动服务"
+if ! compose up -d; then
+  print_diagnostics
+  fail "Docker Compose 启动失败"
+fi
 
 log "等待后端健康检查"
 for attempt in $(seq 1 60); do
@@ -83,6 +114,5 @@ for attempt in $(seq 1 60); do
   sleep 2
 done
 
-compose ps
-compose logs --tail=100 backend >&2
+print_diagnostics
 fail "后端在 120 秒内未通过健康检查"
