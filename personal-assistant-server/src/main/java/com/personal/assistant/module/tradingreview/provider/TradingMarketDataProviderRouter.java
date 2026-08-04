@@ -12,11 +12,11 @@ import java.time.LocalDate;
 @Primary
 public class TradingMarketDataProviderRouter implements TradingMarketDataProvider {
     private final IfindTradingMarketDataProvider ifind;
-    private final EastMoneyTradingMarketDataProvider eastMoney;
+    private final EastMoneyDetailedMarketDataProvider eastMoney;
     private final ObjectMapper objectMapper;
 
     public TradingMarketDataProviderRouter(IfindTradingMarketDataProvider ifind,
-                                           EastMoneyTradingMarketDataProvider eastMoney,
+                                           EastMoneyDetailedMarketDataProvider eastMoney,
                                            ObjectMapper objectMapper) {
         this.ifind = ifind;
         this.eastMoney = eastMoney;

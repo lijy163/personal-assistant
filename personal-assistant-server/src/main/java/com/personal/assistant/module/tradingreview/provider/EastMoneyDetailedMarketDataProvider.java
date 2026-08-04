@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.personal.assistant.module.tradingreview.dto.MarketSnapshot;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -27,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 
-@Primary
 @Component
 public class EastMoneyDetailedMarketDataProvider implements TradingMarketDataProvider {
     private static final Logger log = LoggerFactory.getLogger(EastMoneyDetailedMarketDataProvider.class);
