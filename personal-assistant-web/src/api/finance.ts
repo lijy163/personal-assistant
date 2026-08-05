@@ -9,6 +9,7 @@ export interface FinanceTransaction{id:number;accountId:number;categoryId?:numbe
 export interface MonthlySummary{month:string;income:number;expense:number;balance:number;categories:Array<{categoryName:string;amount:number}>;}
 export const listFinanceAccounts=()=>http.get<unknown,{data:FinanceAccount[]}>('/finance/accounts');
 export const saveFinanceAccount=(data:Record<string,unknown>)=>http.post('/finance/accounts',data);
+export const updateFinanceAccount=(id:number,data:Record<string,unknown>)=>http.put(`/finance/accounts/${id}`,data);
 export const listFinanceCategories=()=>http.get<unknown,{data:FinanceCategory[]}>('/finance/categories');
 export const saveFinanceCategory=(data:Record<string,unknown>)=>http.post('/finance/categories',data);
 export const listFinanceRules=()=>http.get<unknown,{data:FinanceRule[]}>('/finance/rules');
