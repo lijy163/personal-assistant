@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,9 +30,9 @@ class FinanceServiceTest {
     @BeforeEach
     void setUp() {
         service = new FinanceService(accounts, categories, rules, batches, rawRows, transactions, parser);
-        when(accounts.selectCount(any())).thenReturn(0L);
+        lenient().when(accounts.selectCount(any())).thenReturn(0L);
         AtomicLong ids = new AtomicLong(10);
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             invocation.getArgument(0, FinanceAccount.class).setId(ids.getAndIncrement());
             return 1;
         }).when(accounts).insert(any(FinanceAccount.class));
@@ -45,6 +46,12 @@ class FinanceServiceTest {
         assertEquals(10L, first);
         assertEquals(11L, second);
         verify(accounts, times(2)).insert(any(FinanceAccount.class));
+    }
+
+    @Test
+    void exposesSqlStateAndConstraintForDiagnostics() {
+        SQLException sql = new SQLException("duplicate key value violates unique constraint \"finance_account_pkey\"", "23505");
+        assertEquals("SQLState 23505 / finance_account_pkey", FinanceService.integrityDiagnostic(sql));
     }
 
     private FinanceAccountRequest request(String name) {

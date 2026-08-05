@@ -7,6 +7,7 @@ import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.finance.dto.*;
 import com.personal.assistant.module.finance.entity.*;
 import com.personal.assistant.module.finance.mapper.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +16,13 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.SQLException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
+@Slf4j
 @Service
 public class FinanceService {
     private static final Set<String> DIRECTIONS=Set.of("INCOME","EXPENSE");
@@ -29,7 +32,7 @@ public class FinanceService {
     public FinanceService(FinanceAccountMapper accounts,FinanceCategoryMapper categories,FinanceCategoryRuleMapper rules,FinanceImportBatchMapper batches,FinanceRawTransactionMapper rawRows,FinanceTransactionMapper transactions,BillFileParser parser){this.accounts=accounts;this.categories=categories;this.rules=rules;this.batches=batches;this.rawRows=rawRows;this.transactions=transactions;this.parser=parser;}
 
     public List<FinanceAccount> listAccounts(Long uid){return accounts.selectList(new LambdaQueryWrapper<FinanceAccount>().eq(FinanceAccount::getUserId,uid).orderByAsc(FinanceAccount::getAccountName));}
-    @Transactional public Long saveAccount(Long uid,Long id,FinanceAccountRequest request){String accountName=request.accountName().trim();Long duplicateCount=accounts.selectCount(new LambdaQueryWrapper<FinanceAccount>().eq(FinanceAccount::getUserId,uid).eq(FinanceAccount::getAccountName,accountName).ne(id!=null,FinanceAccount::getId,id));if(duplicateCount>0)throw new BusinessException(ErrorCode.VALIDATION_ERROR,"账户名称已存在，请换一个名称");FinanceAccount item=id==null?new FinanceAccount():requireAccount(uid,id);item.setUserId(uid);item.setAccountName(accountName);item.setAccountType(request.accountType().trim().toUpperCase());item.setInstitution(StringUtils.hasText(request.institution())?request.institution().trim():null);item.setCurrency(StringUtils.hasText(request.currency())?request.currency().toUpperCase():"CNY");item.setEnabled(!Boolean.FALSE.equals(request.enabled()));item.setUpdatedAt(LocalDateTime.now());try{if(id==null){item.setCreatedAt(LocalDateTime.now());accounts.insert(item);}else accounts.updateById(item);}catch(DataIntegrityViolationException exception){throw new BusinessException(ErrorCode.VALIDATION_ERROR,"账户保存冲突，请确认名称未重复后重试");}return item.getId();}
+    @Transactional public Long saveAccount(Long uid,Long id,FinanceAccountRequest request){String accountName=request.accountName().trim();Long duplicateCount=accounts.selectCount(new LambdaQueryWrapper<FinanceAccount>().eq(FinanceAccount::getUserId,uid).eq(FinanceAccount::getAccountName,accountName).ne(id!=null,FinanceAccount::getId,id));if(duplicateCount>0)throw new BusinessException(ErrorCode.VALIDATION_ERROR,"账户名称已存在，请换一个名称");FinanceAccount item=id==null?new FinanceAccount():requireAccount(uid,id);item.setUserId(uid);item.setAccountName(accountName);item.setAccountType(request.accountType().trim().toUpperCase());item.setInstitution(StringUtils.hasText(request.institution())?request.institution().trim():null);item.setCurrency(StringUtils.hasText(request.currency())?request.currency().toUpperCase():"CNY");item.setEnabled(!Boolean.FALSE.equals(request.enabled()));item.setUpdatedAt(LocalDateTime.now());try{if(id==null){item.setCreatedAt(LocalDateTime.now());accounts.insert(item);}else accounts.updateById(item);}catch(DataIntegrityViolationException exception){String diagnostic=integrityDiagnostic(exception);log.error("资金账户保存失败: userId={}, accountName={}, accountType={}, diagnostic={}",uid,accountName,item.getAccountType(),diagnostic,exception);throw new BusinessException(ErrorCode.VALIDATION_ERROR,"账户保存失败（"+diagnostic+"），请将该诊断码提供给管理员");}return item.getId();}
     public List<FinanceCategory> listCategories(Long uid){ensureDefaultCategories(uid);return categories.selectList(new LambdaQueryWrapper<FinanceCategory>().eq(FinanceCategory::getUserId,uid).orderByAsc(FinanceCategory::getDirection).orderByAsc(FinanceCategory::getSortOrder));}
     @Transactional public Long saveCategory(Long uid,FinanceCategoryRequest request){if(!DIRECTIONS.contains(request.direction()))throw new BusinessException(ErrorCode.VALIDATION_ERROR,"分类方向不合法");FinanceCategory item=new FinanceCategory();item.setUserId(uid);item.setCategoryName(request.categoryName().trim());item.setDirection(request.direction());item.setParentId(request.parentId());item.setSortOrder(request.sortOrder()==null?0:request.sortOrder());item.setEnabled(!Boolean.FALSE.equals(request.enabled()));item.setCreatedAt(LocalDateTime.now());categories.insert(item);return item.getId();}
     public List<FinanceCategoryRule> listRules(Long uid){return rules.selectList(new LambdaQueryWrapper<FinanceCategoryRule>().eq(FinanceCategoryRule::getUserId,uid).orderByDesc(FinanceCategoryRule::getPriority));}
@@ -68,4 +71,5 @@ public class FinanceService {
     private FinanceTransaction requireTransaction(Long uid,Long id){FinanceTransaction item=transactions.selectById(id);if(item==null||!uid.equals(item.getUserId()))throw new BusinessException(ErrorCode.NOT_FOUND,"交易不存在");return item;}
     private String hash(byte[] bytes){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));}catch(Exception e){throw new IllegalStateException(e);}}
     private String nullSafe(String value){return value==null?"":value;}
+    static String integrityDiagnostic(Throwable exception){Throwable current=exception;String sqlState=null;String constraint=null;while(current!=null){if(current instanceof SQLException sqlException&&sqlException.getSQLState()!=null)sqlState=sqlException.getSQLState();String message=current.getMessage();if(message!=null){java.util.regex.Matcher matcher=java.util.regex.Pattern.compile("constraint \"([^\"]+)\"").matcher(message);if(matcher.find())constraint=matcher.group(1);}current=current.getCause();}return "SQLState "+(sqlState==null?"unknown":sqlState)+(constraint==null?"":" / "+constraint);}
 }
