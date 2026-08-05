@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-fix-finance-account-type-uniqueness
+      author: personal-assistant
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE constraint_name text;
+              BEGIN
+                FOR constraint_name IN
+                  SELECT con.conname
+                  FROM pg_constraint con
+                  JOIN pg_class rel ON rel.oid = con.conrelid
+                  JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+                  WHERE ns.nspname = current_schema()
+                    AND rel.relname = 'finance_account'
+                    AND con.contype = 'u'
+                    AND (
+                      SELECT array_agg(att.attname ORDER BY keys.ordinality)
+                      FROM unnest(con.conkey) WITH ORDINALITY AS keys(attnum, ordinality)
+                      JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = keys.attnum
+                    ) = ARRAY['user_id', 'account_type']::name[]
+                LOOP
+                  EXECUTE format('ALTER TABLE finance_account DROP CONSTRAINT %I', constraint_name);
+                END LOOP;
+              END $$;
+              DO $$
+              DECLARE index_name text;
+              BEGIN
+                FOR index_name IN
+                  SELECT idx.relname
+                  FROM pg_index ind
+                  JOIN pg_class tbl ON tbl.oid = ind.indrelid
+                  JOIN pg_class idx ON idx.oid = ind.indexrelid
+                  JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+                  WHERE ns.nspname = current_schema()
+                    AND tbl.relname = 'finance_account'
+                    AND ind.indisunique
+                    AND NOT ind.indisprimary
+                    AND NOT EXISTS (SELECT 1 FROM pg_constraint con WHERE con.conindid = idx.oid)
+                    AND (
+                      SELECT array_agg(att.attname ORDER BY keys.ordinality)
+                      FROM unnest(ind.indkey) WITH ORDINALITY AS keys(attnum, ordinality)
+                      JOIN pg_attribute att ON att.attrelid = tbl.oid AND att.attnum = keys.attnum
+                      WHERE keys.attnum > 0
+                    ) = ARRAY['user_id', 'account_type']::name[]
+                LOOP
+                  EXECUTE format('DROP INDEX %I', index_name);
+                END LOOP;
+              END $$;
