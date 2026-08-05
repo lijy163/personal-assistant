@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-repair-finance-account-name-constraint
+      author: personal-assistant
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: finance_account
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                constraint_columns name[];
+              BEGIN
+                SELECT array_agg(att.attname ORDER BY keys.ordinality)
+                INTO constraint_columns
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS keys(attnum, ordinality)
+                JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = keys.attnum
+                WHERE rel.relname = 'finance_account'
+                  AND con.conname = 'uk_finance_account_user_name'
+                GROUP BY con.oid;
+
+                IF constraint_columns IS DISTINCT FROM ARRAY['user_id', 'account_name']::name[] THEN
+                  ALTER TABLE finance_account
+                    DROP CONSTRAINT IF EXISTS uk_finance_account_user_name;
+                  ALTER TABLE finance_account
+                    ADD CONSTRAINT uk_finance_account_user_name UNIQUE (user_id, account_name);
+                END IF;
+              END $$;

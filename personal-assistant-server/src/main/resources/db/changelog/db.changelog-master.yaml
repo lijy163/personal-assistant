@@ -33,3 +33,4 @@ databaseChangeLog:
   - include: { file: db/changelog/032-extend-trading-signal-link.yaml }
   - include: { file: db/changelog/033-fix-finance-account-type-uniqueness.yaml }
   - include: { file: db/changelog/034-repair-finance-account-sequence.yaml }
+  - include: { file: db/changelog/035-repair-finance-account-name-constraint.yaml }

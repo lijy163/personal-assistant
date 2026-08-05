@@ -18,7 +18,7 @@ SELECT sequencename, last_value FROM pg_sequences
 WHERE schemaname = current_schema()
   AND sequencename = split_part(pg_get_serial_sequence('finance_account', 'id'), '.', 2);
 SELECT id, author, dateexecuted, exectype FROM databasechangelog
-WHERE id IN ('033-fix-finance-account-type-uniqueness', '034-repair-finance-account-sequence') ORDER BY orderexecuted;
+WHERE id IN ('033-fix-finance-account-type-uniqueness', '034-repair-finance-account-sequence', '035-repair-finance-account-name-constraint') ORDER BY orderexecuted;
 SQL
 
 echo "=== postgres errors (last 30 minutes) ==="
