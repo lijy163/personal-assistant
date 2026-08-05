@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.personal.assistant.common.exception.BusinessException;
 import com.personal.assistant.common.exception.ErrorCode;
 import com.personal.assistant.module.finance.dto.FinanceMonthlyAnalysis;
+import com.personal.assistant.module.finance.dto.FinanceTextParsePreview;
 import com.personal.assistant.module.finance.dto.FinanceTransactionRequest;
 import com.personal.assistant.module.finance.entity.FinanceAccount;
 import com.personal.assistant.module.finance.entity.FinanceCategory;
@@ -37,12 +38,42 @@ public class FinanceManualService {
     private final FinanceAccountMapper accounts;
     private final FinanceCategoryMapper categories;
     private final FinanceTransactionMapper transactions;
+    private final FinanceTextParser textParser;
 
     public FinanceManualService(FinanceAccountMapper accounts, FinanceCategoryMapper categories,
-                                FinanceTransactionMapper transactions) {
+                                FinanceTransactionMapper transactions, FinanceTextParser textParser) {
         this.accounts = accounts;
         this.categories = categories;
         this.transactions = transactions;
+        this.textParser = textParser;
+    }
+
+    public FinanceTextParsePreview parseText(Long userId, String text) {
+        List<FinanceCategory> userCategories = categories.selectList(new LambdaQueryWrapper<FinanceCategory>()
+                .eq(FinanceCategory::getUserId, userId)
+                .eq(FinanceCategory::getEnabled, true));
+        FinanceTextParser.ParseResult result = textParser.parse(text, LocalDateTime.now());
+        List<FinanceTextParsePreview.Row> rows = new ArrayList<>();
+        int rowNumber = 1;
+        for (FinanceTextParser.Draft draft : result.drafts()) {
+            Long categoryId = userCategories.stream()
+                    .filter(category -> draft.direction().equals(category.getDirection()))
+                    .filter(category -> draft.description().contains(category.getCategoryName()))
+                    .map(FinanceCategory::getId)
+                    .findFirst().orElse(null);
+            rows.add(new FinanceTextParsePreview.Row(rowNumber++, draft.transactionTime(), draft.direction(),
+                    draft.amount(), draft.merchant(), draft.description(), draft.transactionType(), categoryId,
+                    draft.description(), draft.warning()));
+        }
+        return new FinanceTextParsePreview(rows, result.ignoredLineCount());
+    }
+
+    @Transactional
+    public int saveBatch(Long userId, List<FinanceTransactionRequest> requests) {
+        for (FinanceTransactionRequest request : requests) {
+            save(userId, null, request);
+        }
+        return requests.size();
     }
 
     @Transactional

@@ -2,7 +2,10 @@ package com.personal.assistant.module.finance.controller;
 
 import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.SecurityContextHelper;
+import com.personal.assistant.module.finance.dto.FinanceBatchTransactionRequest;
 import com.personal.assistant.module.finance.dto.FinanceMonthlyAnalysis;
+import com.personal.assistant.module.finance.dto.FinanceTextParsePreview;
+import com.personal.assistant.module.finance.dto.FinanceTextParseRequest;
 import com.personal.assistant.module.finance.dto.FinanceTransactionRequest;
 import com.personal.assistant.module.finance.service.FinanceManualService;
 import jakarta.validation.Valid;
@@ -31,6 +34,16 @@ public class FinanceManualController {
     @PostMapping("/manual-transactions")
     public ApiResponse<Long> create(@Valid @RequestBody FinanceTransactionRequest request) {
         return ApiResponse.success(service.save(userId(), null, request));
+    }
+
+    @PostMapping("/manual-transactions/parse-text")
+    public ApiResponse<FinanceTextParsePreview> parseText(@Valid @RequestBody FinanceTextParseRequest request) {
+        return ApiResponse.success(service.parseText(userId(), request.text()));
+    }
+
+    @PostMapping("/manual-transactions/batch")
+    public ApiResponse<Integer> createBatch(@Valid @RequestBody FinanceBatchTransactionRequest request) {
+        return ApiResponse.success(service.saveBatch(userId(), request.transactions()));
     }
 
     @PutMapping("/manual-transactions/{id}")

@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-repair-finance-transaction-fingerprint-constraint
+      author: personal-assistant
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: finance_transaction
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                constraint_columns name[];
+              BEGIN
+                SELECT array_agg(att.attname ORDER BY keys.ordinality)
+                INTO constraint_columns
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS keys(attnum, ordinality)
+                JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = keys.attnum
+                WHERE rel.relname = 'finance_transaction'
+                  AND con.conname = 'uk_finance_tx_user_fingerprint'
+                GROUP BY con.oid;
+
+                IF constraint_columns IS DISTINCT FROM ARRAY['user_id', 'fingerprint']::name[] THEN
+                  ALTER TABLE finance_transaction
+                    DROP CONSTRAINT IF EXISTS uk_finance_tx_user_fingerprint;
+                  ALTER TABLE finance_transaction
+                    ADD CONSTRAINT uk_finance_tx_user_fingerprint UNIQUE (user_id, fingerprint);
+                END IF;
+              END $$;
