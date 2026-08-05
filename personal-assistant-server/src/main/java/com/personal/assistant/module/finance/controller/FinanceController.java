@@ -28,6 +28,7 @@ public class FinanceController {
     @PostMapping("/categories") public ApiResponse<Long> category(@Valid @RequestBody FinanceCategoryRequest request){return ApiResponse.success(service.saveCategory(uid(),request));}
     @GetMapping("/rules") public ApiResponse<List<FinanceCategoryRule>> rules(){return ApiResponse.success(service.listRules(uid()));}
     @PostMapping("/rules") public ApiResponse<Long> rule(@Valid @RequestBody FinanceRuleRequest request){return ApiResponse.success(service.saveRule(uid(),request));}
+    @PutMapping("/rules/{id}") public ApiResponse<Long> updateRule(@PathVariable Long id,@Valid @RequestBody FinanceRuleRequest request){return ApiResponse.success(service.updateRule(uid(),id,request));}
     @PostMapping(value="/imports/preview",consumes=MediaType.MULTIPART_FORM_DATA_VALUE) public ApiResponse<FinanceImportPreview> preview(@RequestParam Long accountId,@RequestParam String platform,@RequestPart MultipartFile file)throws IOException{return ApiResponse.success(service.preview(uid(),accountId,platform,file.getOriginalFilename()==null?"bill.csv":file.getOriginalFilename(),file.getBytes()));}
     @GetMapping("/imports") public ApiResponse<List<FinanceImportBatch>> batches(){return ApiResponse.success(service.listBatches(uid()));}
     @GetMapping("/imports/{id}") public ApiResponse<FinanceImportPreview> batch(@PathVariable Long id){return ApiResponse.success(service.batch(uid(),id));}

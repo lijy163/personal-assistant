@@ -14,6 +14,7 @@ export const listFinanceCategories=()=>http.get<unknown,{data:FinanceCategory[]}
 export const saveFinanceCategory=(data:Record<string,unknown>)=>http.post('/finance/categories',data);
 export const listFinanceRules=()=>http.get<unknown,{data:FinanceRule[]}>('/finance/rules');
 export const saveFinanceRule=(data:Record<string,unknown>)=>http.post('/finance/rules',data);
+export const updateFinanceRule=(id:number,data:Record<string,unknown>)=>http.put(`/finance/rules/${id}`,data);
 export const previewFinanceImport=(accountId:number,platform:string,file:File)=>{const data=new FormData();data.append('accountId',String(accountId));data.append('platform',platform);data.append('file',file);return http.post<unknown,{data:ImportPreview}>('/finance/imports/preview',data,{headers:{'Content-Type':'multipart/form-data'},timeout:60000});};
 export const confirmFinanceImport=(id:number)=>http.post<unknown,{data:number}>(`/finance/imports/${id}/confirm`);
 export const listFinanceImports=()=>http.get<unknown,{data:ImportBatch[]}>('/finance/imports');
