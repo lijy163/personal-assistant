@@ -26,6 +26,7 @@ public class FinanceController {
     @PutMapping("/accounts/{id}") public ApiResponse<Long> account(@PathVariable Long id,@Valid @RequestBody FinanceAccountRequest request){return ApiResponse.success(service.saveAccount(uid(),id,request));}
     @GetMapping("/categories") public ApiResponse<List<FinanceCategory>> categories(){return ApiResponse.success(service.listCategories(uid()));}
     @PostMapping("/categories") public ApiResponse<Long> category(@Valid @RequestBody FinanceCategoryRequest request){return ApiResponse.success(service.saveCategory(uid(),request));}
+    @PutMapping("/categories/{id}") public ApiResponse<Long> updateCategory(@PathVariable Long id,@Valid @RequestBody FinanceCategoryRequest request){return ApiResponse.success(service.updateCategory(uid(),id,request));}
     @GetMapping("/rules") public ApiResponse<List<FinanceCategoryRule>> rules(){return ApiResponse.success(service.listRules(uid()));}
     @PostMapping("/rules") public ApiResponse<Long> rule(@Valid @RequestBody FinanceRuleRequest request){return ApiResponse.success(service.saveRule(uid(),request));}
     @PutMapping("/rules/{id}") public ApiResponse<Long> updateRule(@PathVariable Long id,@Valid @RequestBody FinanceRuleRequest request){return ApiResponse.success(service.updateRule(uid(),id,request));}

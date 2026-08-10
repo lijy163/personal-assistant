@@ -12,6 +12,7 @@ export const saveFinanceAccount=(data:Record<string,unknown>)=>http.post('/finan
 export const updateFinanceAccount=(id:number,data:Record<string,unknown>)=>http.put(`/finance/accounts/${id}`,data);
 export const listFinanceCategories=()=>http.get<unknown,{data:FinanceCategory[]}>('/finance/categories');
 export const saveFinanceCategory=(data:Record<string,unknown>)=>http.post('/finance/categories',data);
+export const updateFinanceCategory=(id:number,data:Record<string,unknown>)=>http.put(`/finance/categories/${id}`,data);
 export const listFinanceRules=()=>http.get<unknown,{data:FinanceRule[]}>('/finance/rules');
 export const saveFinanceRule=(data:Record<string,unknown>)=>http.post('/finance/rules',data);
 export const updateFinanceRule=(id:number,data:Record<string,unknown>)=>http.put(`/finance/rules/${id}`,data);
