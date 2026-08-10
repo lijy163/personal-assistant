@@ -7,7 +7,12 @@
             <h2>{{ monthLabel }}收支概览</h2>
             <span>按标准交易自动汇总，手动记录会即时计入</span>
           </div>
-          <el-date-picker v-model="month" type="month" value-format="YYYY-MM" :clearable="false" @change="loadAnalysis" />
+          <div class="analysis-filters">
+            <el-select v-model="analysisAccountIds" multiple collapse-tags collapse-tags-tooltip placeholder="选择资金账户" style="width:280px" @change="onAnalysisAccountsChange">
+              <el-option v-for="item in accounts" :key="item.id" :label="`${item.accountName}（${accountTypeName(item.accountType)}）`" :value="item.id" />
+            </el-select>
+            <el-date-picker v-model="month" type="month" value-format="YYYY-MM" :clearable="false" @change="loadAnalysis" />
+          </div>
         </div>
         <div class="summary">
           <el-card><small>本月收入</small><b class="income">{{ money(analysis?.income) }}</b></el-card>
@@ -147,6 +152,7 @@ import { createManualTransaction, createManualTransactionsBatch, deleteManualTra
 const tab=ref('overview'),month=ref(new Date().toISOString().slice(0,7)),analysis=ref<MonthlyAnalysis>();
 const accounts=ref<FinanceAccount[]>([]),categories=ref<FinanceCategory[]>([]),rules=ref<FinanceRule[]>([]),transactions=ref<FinanceTransaction[]>([]);
 const selectedTransactions=ref<FinanceTransaction[]>([]);
+const analysisAccountIds=ref<number[]>([]);
 const previewData=ref<ImportPreview>(),uploading=ref(false),transactionLoading=ref(false),saving=ref(false),accountSaving=ref(false),accountVisible=ref(false),accountEditingId=ref<number>(),ruleVisible=ref(false),transactionVisible=ref(false),editingId=ref<number>(),transactionFormRef=ref<FormInstance>();
 const textImportVisible=ref(false),textInput=ref(''),textRows=ref<FinanceTextParseRow[]>([]),ignoredLineCount=ref(0),textAccountId=ref<number>(),textParsing=ref(false),textSaving=ref(false),ruleEditingId=ref<number>(),categoryVisible=ref(false),categoryEditingId=ref<number>();
 const filters=reactive({keyword:'',direction:'',month:new Date().toISOString().slice(0,7)}),upload=reactive<{accountId?:number;platform:string;file?:File}>({platform:'ALIPAY'});
@@ -159,8 +165,9 @@ const monthLabel=computed(()=>{const [year,monthValue]=month.value.split('-');re
 const categoryOption=computed<EChartsOption>(()=>({tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}（{d}%）'},legend:{type:'scroll',bottom:0},series:[{type:'pie',radius:['42%','68%'],center:['50%','44%'],label:{formatter:'{b}\n{d}%'},data:(analysis.value?.categories||[]).map(item=>({name:item.categoryName,value:item.amount}))}]}));
 const trendOption=computed<EChartsOption>(()=>({tooltip:{trigger:'axis'},legend:{data:['收入','支出']},grid:{left:54,right:24,top:48,bottom:35},xAxis:{type:'category',data:(analysis.value?.trend||[]).map(item=>item.month.slice(5)+'月')},yAxis:{type:'value',axisLabel:{formatter:(value:number)=>`¥${value}`}},series:[{name:'收入',type:'bar',itemStyle:{color:'#16a34a'},data:(analysis.value?.trend||[]).map(item=>item.income)},{name:'支出',type:'bar',itemStyle:{color:'#ef4444'},data:(analysis.value?.trend||[]).map(item=>item.expense)}]}));
 
-async function base(){[accounts.value,categories.value,rules.value]=await Promise.all([listFinanceAccounts().then(response=>response.data),listFinanceCategories().then(response=>response.data),listFinanceRules().then(response=>response.data)]);if(!upload.accountId&&accounts.value.length)upload.accountId=accounts.value[0].id;}
-async function loadAnalysis(){analysis.value=(await getFinanceMonthlyAnalysis(month.value)).data;}
+async function base(){[accounts.value,categories.value,rules.value]=await Promise.all([listFinanceAccounts().then(response=>response.data),listFinanceCategories().then(response=>response.data),listFinanceRules().then(response=>response.data)]);if(!upload.accountId&&accounts.value.length)upload.accountId=accounts.value[0].id;if(!analysisAccountIds.value.length)analysisAccountIds.value=accounts.value.map(item=>item.id);}
+async function loadAnalysis(){analysis.value=(await getFinanceMonthlyAnalysis(month.value,analysisAccountIds.value)).data;}
+async function onAnalysisAccountsChange(){if(!analysisAccountIds.value.length)analysisAccountIds.value=accounts.value.map(item=>item.id);await loadAnalysis();}
 async function loadTransactions(){transactionLoading.value=true;try{transactions.value=(await listFinanceTransactions({keyword:filters.keyword||undefined,direction:filters.direction||undefined,month:filters.month||undefined})).data;}finally{transactionLoading.value=false;}}
 async function loadTab(name:string|number){if(name==='overview')await loadAnalysis();if(name==='transactions')await loadTransactions();if(name==='settings')await base();}
 function openTextImport(){textInput.value='';textRows.value=[];ignoredLineCount.value=0;textAccountId.value=accounts.value.find(item=>item.enabled)?.id;textImportVisible.value=true;}
@@ -192,5 +199,5 @@ onMounted(async()=>{await base();await loadAnalysis();});
 </script>
 
 <style scoped>
-.finance-page{display:flex;flex-direction:column;gap:16px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px}.month-toolbar{margin-bottom:16px}.month-toolbar h2{font-size:20px;margin:0 0 5px}.month-toolbar span{color:#64748b;font-size:13px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}.summary small{display:block;color:#64748b}.summary b{display:block;font-size:25px;margin-top:10px}.summary span{color:#64748b;font-size:13px}.income{color:#16a34a}.expense{color:#dc2626}.card-title{display:flex;justify-content:space-between;align-items:center}.chart-card{height:430px}.category-table{margin-top:16px}.filters{display:flex;gap:8px;flex-wrap:wrap}.filters .el-input{width:180px}.filters .el-select{width:110px}.filters .el-date-editor{width:150px}.el-card+.el-card{margin-top:16px}.text-import-input{margin-top:16px}.text-import-toolbar{display:flex;align-items:center;gap:16px;margin:16px 0;flex-wrap:wrap}.text-import-toolbar span{color:#64748b}@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.toolbar{align-items:flex-start;flex-direction:column}.filters{width:100%}.chart-card{margin-bottom:16px}}@media(max-width:520px){.summary{grid-template-columns:1fr}.filters>*{width:100%!important}}
+.finance-page{display:flex;flex-direction:column;gap:16px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px}.month-toolbar{margin-bottom:16px}.month-toolbar h2{font-size:20px;margin:0 0 5px}.month-toolbar span{color:#64748b;font-size:13px}.analysis-filters{display:flex;align-items:center;gap:10px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}.summary small{display:block;color:#64748b}.summary b{display:block;font-size:25px;margin-top:10px}.summary span{color:#64748b;font-size:13px}.income{color:#16a34a}.expense{color:#dc2626}.card-title{display:flex;justify-content:space-between;align-items:center}.chart-card{height:430px}.category-table{margin-top:16px}.filters{display:flex;gap:8px;flex-wrap:wrap}.filters .el-input{width:180px}.filters .el-select{width:110px}.filters .el-date-editor{width:150px}.el-card+.el-card{margin-top:16px}.text-import-input{margin-top:16px}.text-import-toolbar{display:flex;align-items:center;gap:16px;margin:16px 0;flex-wrap:wrap}.text-import-toolbar span{color:#64748b}@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.toolbar{align-items:flex-start;flex-direction:column}.analysis-filters{width:100%;flex-wrap:wrap}.filters{width:100%}.chart-card{margin-bottom:16px}}@media(max-width:520px){.summary{grid-template-columns:1fr}.analysis-filters>*{width:100%!important}.filters>*{width:100%!important}}
 </style>

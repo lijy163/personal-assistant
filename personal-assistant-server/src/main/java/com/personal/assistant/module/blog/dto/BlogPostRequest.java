@@ -8,7 +8,7 @@ public record BlogPostRequest(
         @NotBlank @Size(max = 200) String title,
         @Size(max = 220) String slug,
         @Size(max = 500) String summary,
-        @NotBlank String markdownContent,
+        @NotBlank @Size(max = 500_000, message = "文章正文不能超过 500000 个字符") String markdownContent,
         @Size(max = 1000) String coverUrl,
         @Size(max = 100) String category,
         @Size(max = 500) String tags,

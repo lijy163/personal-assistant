@@ -124,11 +124,13 @@ public class FinanceManualService {
         return distinctIds.size();
     }
 
-    public FinanceMonthlyAnalysis monthly(Long userId, YearMonth month) {
+    public FinanceMonthlyAnalysis monthly(Long userId, YearMonth month, List<Long> accountIds) {
+        List<Long> selectedAccountIds = accountIds == null ? List.of() : accountIds.stream().distinct().toList();
+        selectedAccountIds.forEach(id -> requireAccount(userId, id));
         Map<Long, String> categoryNames = new HashMap<>();
         categories.selectList(new LambdaQueryWrapper<FinanceCategory>().eq(FinanceCategory::getUserId, userId))
                 .forEach(category -> categoryNames.put(category.getId(), category.getCategoryName()));
-        List<FinanceTransaction> rows = monthRows(userId, month);
+        List<FinanceTransaction> rows = monthRows(userId, month, selectedAccountIds);
         BigDecimal income = sum(rows, "INCOME");
         BigDecimal expense = sum(rows, "EXPENSE");
         Map<String, List<FinanceTransaction>> grouped = rows.stream()
@@ -144,7 +146,7 @@ public class FinanceManualService {
         List<FinanceMonthlyAnalysis.MonthlyTrend> trend = new ArrayList<>();
         for (int offset = 5; offset >= 0; offset--) {
             YearMonth trendMonth = month.minusMonths(offset);
-            List<FinanceTransaction> trendRows = monthRows(userId, trendMonth);
+            List<FinanceTransaction> trendRows = monthRows(userId, trendMonth, selectedAccountIds);
             BigDecimal trendIncome = sum(trendRows, "INCOME");
             BigDecimal trendExpense = sum(trendRows, "EXPENSE");
             trend.add(new FinanceMonthlyAnalysis.MonthlyTrend(trendMonth.toString(), trendIncome,
@@ -157,9 +159,10 @@ public class FinanceManualService {
                 expenseCount, dailyAverage, topCategory, categoryAmounts, trend);
     }
 
-    private List<FinanceTransaction> monthRows(Long userId, YearMonth month) {
+    private List<FinanceTransaction> monthRows(Long userId, YearMonth month, List<Long> accountIds) {
         return transactions.selectList(new LambdaQueryWrapper<FinanceTransaction>()
                 .eq(FinanceTransaction::getUserId, userId)
+                .in(!accountIds.isEmpty(), FinanceTransaction::getAccountId, accountIds)
                 .ge(FinanceTransaction::getTransactionTime, month.atDay(1).atStartOfDay())
                 .lt(FinanceTransaction::getTransactionTime, month.plusMonths(1).atDay(1).atStartOfDay()));
     }

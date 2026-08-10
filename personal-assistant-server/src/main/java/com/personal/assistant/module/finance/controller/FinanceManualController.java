@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/finance")
@@ -65,8 +66,9 @@ public class FinanceManualController {
 
     @GetMapping("/stats/monthly-analysis")
     public ApiResponse<FinanceMonthlyAnalysis> monthly(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
-        return ApiResponse.success(service.monthly(userId(), month));
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
+            @RequestParam(required = false) List<Long> accountIds) {
+        return ApiResponse.success(service.monthly(userId(), month, accountIds));
     }
 
     private Long userId() {
