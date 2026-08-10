@@ -3,6 +3,7 @@ package com.personal.assistant.module.finance.controller;
 import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.SecurityContextHelper;
 import com.personal.assistant.module.finance.dto.FinanceBatchTransactionRequest;
+import com.personal.assistant.module.finance.dto.FinanceBatchDeleteRequest;
 import com.personal.assistant.module.finance.dto.FinanceMonthlyAnalysis;
 import com.personal.assistant.module.finance.dto.FinanceTextParsePreview;
 import com.personal.assistant.module.finance.dto.FinanceTextParseRequest;
@@ -55,6 +56,11 @@ public class FinanceManualController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(userId(), id);
         return ApiResponse.success();
+    }
+
+    @PostMapping("/manual-transactions/batch-delete")
+    public ApiResponse<Integer> deleteBatch(@Valid @RequestBody FinanceBatchDeleteRequest request) {
+        return ApiResponse.success(service.deleteBatch(userId(), request.ids()));
     }
 
     @GetMapping("/stats/monthly-analysis")

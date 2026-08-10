@@ -116,6 +116,14 @@ public class FinanceManualService {
         transactions.deleteById(requireTransaction(userId, id));
     }
 
+    @Transactional
+    public int deleteBatch(Long userId, List<Long> ids) {
+        List<Long> distinctIds = ids.stream().distinct().toList();
+        distinctIds.forEach(id -> requireTransaction(userId, id));
+        transactions.deleteByIds(distinctIds);
+        return distinctIds.size();
+    }
+
     public FinanceMonthlyAnalysis monthly(Long userId, YearMonth month) {
         Map<Long, String> categoryNames = new HashMap<>();
         categories.selectList(new LambdaQueryWrapper<FinanceCategory>().eq(FinanceCategory::getUserId, userId))

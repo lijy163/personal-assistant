@@ -36,4 +36,5 @@ export const createManualTransactionsBatch=(transactions:FinanceTransactionPaylo
 export const createManualTransaction=(data:FinanceTransactionPayload)=>http.post('/finance/manual-transactions',data);
 export const updateManualTransaction=(id:number,data:FinanceTransactionPayload)=>http.put(`/finance/manual-transactions/${id}`,data);
 export const deleteManualTransaction=(id:number)=>http.delete(`/finance/manual-transactions/${id}`);
+export const deleteManualTransactionsBatch=(ids:number[])=>http.post<unknown,{data:number}>('/finance/manual-transactions/batch-delete',{ids});
 export const getFinanceMonthlyAnalysis=(month:string)=>http.get<unknown,{data:MonthlyAnalysis}>('/finance/stats/monthly-analysis',{params:{month}});

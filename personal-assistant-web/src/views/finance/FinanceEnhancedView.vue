@@ -50,13 +50,16 @@
                 <el-input v-model="filters.keyword" clearable placeholder="商户/摘要" @keyup.enter="loadTransactions" />
                 <el-select v-model="filters.direction" clearable placeholder="收支"><el-option label="收入" value="INCOME" /><el-option label="支出" value="EXPENSE" /></el-select>
                 <el-button @click="loadTransactions">查询</el-button>
+                <el-button type="danger" plain :disabled="!selectedTransactions.length" @click="removeSelectedTransactions">批量删除<span v-if="selectedTransactions.length">（{{ selectedTransactions.length }}）</span></el-button>
                 <el-button type="success" plain @click="openTextImport">粘贴识别</el-button>
                 <el-button type="primary" @click="openTransaction()">手动记账</el-button>
               </div>
             </div>
           </template>
-          <el-table v-loading="transactionLoading" :data="transactions" empty-text="暂无交易，点击“手动记账”添加第一笔">
+          <el-table v-loading="transactionLoading" :data="transactions" row-key="id" empty-text="暂无交易，点击“手动记账”添加第一笔" @selection-change="onTransactionSelectionChange">
+            <el-table-column type="selection" width="48" reserve-selection />
             <el-table-column label="时间" width="170"><template #default="{row}">{{ time(row.transactionTime) }}</template></el-table-column>
+            <el-table-column label="资金账户" min-width="130"><template #default="{row}">{{ accountName(row.accountId) }}</template></el-table-column>
             <el-table-column prop="merchant" label="商户" min-width="120" />
             <el-table-column prop="description" label="摘要" min-width="160" show-overflow-tooltip />
             <el-table-column label="方向" width="80"><template #default="{row}"><el-tag :type="row.direction==='INCOME'?'success':'warning'">{{ row.direction==='INCOME'?'收入':'支出' }}</el-tag></template></el-table-column>
@@ -139,10 +142,11 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
 import BaseChart from '@/components/BaseChart.vue';
 import { categorizeFinanceTransaction, confirmFinanceImport, listFinanceAccounts, listFinanceCategories, listFinanceRules, listFinanceTransactions, previewFinanceImport, saveFinanceAccount, saveFinanceCategory, saveFinanceRule, updateFinanceAccount, updateFinanceCategory, updateFinanceRule, type FinanceAccount, type FinanceCategory, type FinanceRule, type FinanceTransaction, type ImportPreview } from '@/api/finance';
-import { createManualTransaction, createManualTransactionsBatch, deleteManualTransaction, getFinanceMonthlyAnalysis, parseFinanceText, updateManualTransaction, type FinanceTextParseRow, type FinanceTransactionPayload, type MonthlyAnalysis } from '@/api/financeEnhancement';
+import { createManualTransaction, createManualTransactionsBatch, deleteManualTransaction, deleteManualTransactionsBatch, getFinanceMonthlyAnalysis, parseFinanceText, updateManualTransaction, type FinanceTextParseRow, type FinanceTransactionPayload, type MonthlyAnalysis } from '@/api/financeEnhancement';
 
 const tab=ref('overview'),month=ref(new Date().toISOString().slice(0,7)),analysis=ref<MonthlyAnalysis>();
 const accounts=ref<FinanceAccount[]>([]),categories=ref<FinanceCategory[]>([]),rules=ref<FinanceRule[]>([]),transactions=ref<FinanceTransaction[]>([]);
+const selectedTransactions=ref<FinanceTransaction[]>([]);
 const previewData=ref<ImportPreview>(),uploading=ref(false),transactionLoading=ref(false),saving=ref(false),accountSaving=ref(false),accountVisible=ref(false),accountEditingId=ref<number>(),ruleVisible=ref(false),transactionVisible=ref(false),editingId=ref<number>(),transactionFormRef=ref<FormInstance>();
 const textImportVisible=ref(false),textInput=ref(''),textRows=ref<FinanceTextParseRow[]>([]),ignoredLineCount=ref(0),textAccountId=ref<number>(),textParsing=ref(false),textSaving=ref(false),ruleEditingId=ref<number>(),categoryVisible=ref(false),categoryEditingId=ref<number>();
 const filters=reactive({keyword:'',direction:'',month:new Date().toISOString().slice(0,7)}),upload=reactive<{accountId?:number;platform:string;file?:File}>({platform:'ALIPAY'});
@@ -165,6 +169,8 @@ async function saveTextImport(){if(!textAccountId.value)return;if(textRows.value
 function openTransaction(row?:FinanceTransaction){editingId.value=row?.id;Object.assign(transactionForm,blankTransaction(),row?{accountId:row.accountId,categoryId:row.categoryId,transactionTime:row.transactionTime.slice(0,19),direction:row.direction,amount:Number(row.amount),transactionType:row.transactionType,merchant:row.merchant||'',description:row.description||'',note:(row as FinanceTransaction&{note?:string}).note||''}:{});transactionVisible.value=true;}
 async function saveTransaction(){if(!(await transactionFormRef.value?.validate()))return;saving.value=true;try{editingId.value?await updateManualTransaction(editingId.value,transactionForm):await createManualTransaction(transactionForm);ElMessage.success(editingId.value?'交易已更新':'记账成功');transactionVisible.value=false;await Promise.all([loadTransactions(),loadAnalysis()]);}finally{saving.value=false;}}
 async function removeTransaction(row:FinanceTransaction){await ElMessageBox.confirm(`确认删除 ${money(row.amount)} 的交易记录？删除后不可恢复。`,'删除交易',{type:'warning'});await deleteManualTransaction(row.id);ElMessage.success('交易已删除');await Promise.all([loadTransactions(),loadAnalysis()]);}
+function onTransactionSelectionChange(rows:FinanceTransaction[]){selectedTransactions.value=rows;}
+async function removeSelectedTransactions(){const rows=selectedTransactions.value;if(!rows.length)return;await ElMessageBox.confirm(`确认删除选中的 ${rows.length} 条交易记录？删除后不可恢复。`,'批量删除交易',{type:'warning'});const count=(await deleteManualTransactionsBatch(rows.map(row=>row.id))).data;selectedTransactions.value=[];ElMessage.success(`已删除 ${count} 条交易`);await Promise.all([loadTransactions(),loadAnalysis()]);}
 function selectFile(file:UploadFile){upload.file=file.raw;}
 async function preview(){if(!upload.accountId||!upload.file)return;uploading.value=true;try{previewData.value=(await previewFinanceImport(upload.accountId,upload.platform,upload.file)).data;}finally{uploading.value=false;}}
 async function confirm(){if(!previewData.value)return;const count=(await confirmFinanceImport(previewData.value.batchId)).data;ElMessage.success(`成功导入 ${count} 条交易`);previewData.value=undefined;await Promise.all([loadTransactions(),loadAnalysis()]);}
@@ -177,6 +183,7 @@ function openCategory(row?:FinanceCategory){categoryEditingId.value=row?.id;cate
 async function saveCategory(){if(!categoryForm.categoryName.trim())return ElMessage.warning('请输入类型');const payload={categoryName:categoryForm.categoryName.trim(),enabled:true};const editing=categoryEditingId.value;if(editing)await updateFinanceCategory(editing,payload);else await saveFinanceCategory(payload);categoryVisible.value=false;ElMessage.success(editing?'分类已更新':'分类已创建');await base();}
 function directionCategories(direction:string){return categories.value.filter(item=>item.direction===direction&&item.enabled);}
 function categoryName(id:number){return categories.value.find(item=>item.id===id)?.categoryName||'-';}
+function accountName(id:number){return accounts.value.find(item=>item.id===id)?.accountName||'-';}
 function accountTypeName(value:string){return ({ALIPAY:'支付宝',WECHAT:'微信',BANK:'银行卡',CASH:'现金'} as Record<string,string>)[value]||value;}
 function money(value?:number){return value==null?'¥0.00':`¥${Number(value).toFixed(2)}`;}
 function time(value:string){return new Date(value).toLocaleString('zh-CN',{hour12:false});}
