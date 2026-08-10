@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-repair-finance-category-name-constraint
+      author: personal-assistant
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: finance_category
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                constraint_columns name[];
+              BEGIN
+                SELECT array_agg(att.attname ORDER BY keys.ordinality)
+                INTO constraint_columns
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+                CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS keys(attnum, ordinality)
+                JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = keys.attnum
+                WHERE ns.nspname = current_schema()
+                  AND rel.relname = 'finance_category'
+                  AND con.conname = 'uk_finance_category_user_direction_name'
+                GROUP BY con.oid;
+
+                IF constraint_columns IS DISTINCT FROM ARRAY['user_id', 'direction', 'category_name']::name[] THEN
+                  ALTER TABLE finance_category
+                    DROP CONSTRAINT IF EXISTS uk_finance_category_user_direction_name;
+                  ALTER TABLE finance_category
+                    ADD CONSTRAINT uk_finance_category_user_direction_name
+                    UNIQUE (user_id, direction, category_name);
+                END IF;
+              END $$;
