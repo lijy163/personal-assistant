@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-repair-finance-category-sequence
+      author: personal-assistant
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: finance_category
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                sequence_name text;
+                next_id bigint;
+              BEGIN
+                sequence_name := pg_get_serial_sequence('finance_category', 'id');
+                IF sequence_name IS NOT NULL THEN
+                  SELECT COALESCE(MAX(id), 0) + 1 INTO next_id FROM finance_category;
+                  PERFORM setval(sequence_name, GREATEST(next_id, 1), false);
+                END IF;
+              END $$;

@@ -35,3 +35,4 @@ databaseChangeLog:
   - include: { file: db/changelog/034-repair-finance-account-sequence.yaml }
   - include: { file: db/changelog/035-repair-finance-account-name-constraint.yaml }
   - include: { file: db/changelog/036-repair-finance-transaction-fingerprint-constraint.yaml }
+  - include: { file: db/changelog/037-repair-finance-category-sequence.yaml }
