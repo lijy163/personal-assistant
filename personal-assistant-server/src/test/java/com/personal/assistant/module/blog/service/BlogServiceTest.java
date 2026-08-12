@@ -60,6 +60,16 @@ class BlogServiceTest {
     }
 
     @Test
+    void adminListFiltersByRequestedSite() {
+        when(posts.selectList(any())).thenReturn(List.of());
+        service.adminList(7L, null, null, "RAIN7");
+        ArgumentCaptor<LambdaQueryWrapper<BlogPost>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(posts).selectList(captor.capture());
+        assertTrue(captor.getValue().getSqlSegment().contains("site"));
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue("RAIN7"));
+    }
+
+    @Test
     void rejectsDuplicateSlug() {
         when(posts.selectCount(any())).thenReturn(1L);
         assertThrows(BusinessException.class, () -> service.create(7L, request("标题", "same", "", "WORK")));

@@ -30,10 +30,11 @@ public class BlogService {
         this.posts = posts;
     }
 
-    public List<BlogPost> adminList(Long userId, String status, String keyword) {
+    public List<BlogPost> adminList(Long userId, String status, String keyword, String site) {
         return posts.selectList(new LambdaQueryWrapper<BlogPost>()
                 .eq(BlogPost::getUserId, userId)
                 .eq(StringUtils.hasText(status), BlogPost::getStatus, status)
+                .eq(StringUtils.hasText(site), BlogPost::getSite, normalizeSite(site))
                 .and(StringUtils.hasText(keyword), query -> query.like(BlogPost::getTitle, keyword)
                         .or().like(BlogPost::getSummary, keyword))
                 .orderByDesc(BlogPost::getUpdatedAt));

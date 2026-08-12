@@ -1,4 +1,4 @@
-<template><div class="pwa-status"><el-alert v-if="!online" title="当前处于离线状态，文字草稿会保存在本机" type="warning" :closable="false" show-icon/><div v-if="installReady||updateReady" class="pwa-action"><span>{{updateReady?'发现新版本，刷新后即可使用':'可将个人辅助系统安装到手机桌面'}}</span><el-button size="small" type="primary" @click="updateReady?applyUpdate():install()">{{updateReady?'立即更新':'安装应用'}}</el-button></div></div></template>
+<template><div class="pwa-status"><el-alert v-if="!online" title="当前处于离线状态，收件箱文字可排队并在联网后同步" type="warning" :closable="false" show-icon/><div v-if="installReady||updateReady" class="pwa-action"><span>{{updateReady?'发现新版本，刷新后即可使用':'可将个人辅助系统安装到手机桌面'}}</span><el-button size="small" type="primary" @click="updateReady?applyUpdate():install()">{{updateReady?'立即更新':'安装应用'}}</el-button></div></div></template>
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 

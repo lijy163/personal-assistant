@@ -12,7 +12,7 @@
       </el-container>
     </el-container>
     <el-drawer v-model="mobileMenu" direction="ltr" size="min(86vw, 320px)" :with-header="false"><AppNavigation @navigate="mobileMenu=false" /></el-drawer>
-    <el-dialog v-model="searchVisible" title="全局搜索" width="min(760px, 94vw)" class="mobile-full-dialog"><el-input v-model="searchKeyword" placeholder="搜索任务、开发日志、账单、学习总结、记录和股票" @keyup.enter="search"/><div class="search-results"><el-empty v-if="!searchResults.length" description="未找到相关内容"/><button v-for="item in searchResults" :key="item.type+item.id" class="search-item" @click="goResult(item)"><el-tag size="small">{{typeName(item.type)}}</el-tag><div><b>{{item.title}}</b><p>{{item.snippet}}</p></div><small>{{formatTime(item.occurredAt)}}</small></button></div></el-dialog>
+    <el-dialog v-model="searchVisible" title="全局搜索" width="min(760px, 94vw)" class="mobile-full-dialog"><el-input v-model="searchKeyword" placeholder="搜索任务、开发日志、账单、学习总结、记录和股票" @keyup.enter="search"/><div class="search-results"><el-empty v-if="!searchResults.length" description="未找到相关内容"/><button v-for="item in searchResults" :key="item.type+item.id" class="search-item" @click="goResult(item)"><el-tag size="small">{{typeName(item.type)}}</el-tag><div><b v-html="highlight(item.title)"/><p v-html="highlight(item.snippet)"/></div><small>{{formatTime(item.occurredAt)}}</small></button></div></el-dialog>
     <MobileBottomNav @collect="openCollector" />
   </div>
 </template>
@@ -46,6 +46,9 @@ async function search() {
   searchVisible.value = true;
 }
 async function goResult(item: SearchResult) { searchVisible.value = false; await router.push(item.route); }
+function escapeHtml(value:string){return value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]||char));}
+function escapeRegExp(value:string){return value.replace(/[.*+?^$()|[\]{}\\]/g,'\\$&');}
+function highlight(value:string){const escaped=escapeHtml(value);const keyword=escapeRegExp(searchKeyword.value.trim());return keyword?escaped.replace(new RegExp(`(${keyword})`,'gi'),'<mark>$1</mark>'):escaped;}
 async function handleUserCommand(command: string) {
   if (command !== 'logout') return;
   try { await logout(); } finally {
@@ -66,4 +69,4 @@ onMounted(async () => {
   }
 });
 </script>
-<style scoped>.app-frame{min-height:100vh}.title-row{display:flex;align-items:center;gap:8px}.mobile-menu-button{display:none;font-size:22px}.global-search{width:280px}.search-results{max-height:520px;overflow:auto;margin-top:12px}.search-item{width:100%;display:grid;grid-template-columns:70px 1fr 150px;gap:12px;text-align:left;align-items:start;border:0;border-bottom:1px solid #eee;background:white;padding:14px;cursor:pointer}.search-item:hover{background:#f8fafc}.search-item p{margin:6px 0;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-item small{text-align:right;color:#94a3b8}@media(max-width:768px){.desktop-sidebar{display:none}.mobile-menu-button{display:inline-flex}.app-header{height:60px;padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.page-desc,.desktop-quick{display:none}.global-search{width:44px}.global-search :deep(input){display:none}.header-actions{gap:6px}.app-main{padding:12px max(12px,env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow-x:hidden}.search-item{grid-template-columns:60px 1fr}.search-item small{display:none}}</style>
+<style scoped>.app-frame{min-height:100vh}.search-item :deep(mark){padding:0 2px;color:#854d0e;background:#fef08a;border-radius:3px}.title-row{display:flex;align-items:center;gap:8px}.mobile-menu-button{display:none;font-size:22px}.global-search{width:280px}.search-results{max-height:520px;overflow:auto;margin-top:12px}.search-item{width:100%;display:grid;grid-template-columns:70px 1fr 150px;gap:12px;text-align:left;align-items:start;border:0;border-bottom:1px solid #eee;background:white;padding:14px;cursor:pointer}.search-item:hover{background:#f8fafc}.search-item p{margin:6px 0;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-item small{text-align:right;color:#94a3b8}@media(max-width:768px){.desktop-sidebar{display:none}.mobile-menu-button{display:inline-flex}.app-header{height:60px;padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.page-desc,.desktop-quick{display:none}.global-search{width:44px}.global-search :deep(input){display:none}.header-actions{gap:6px}.app-main{padding:12px max(12px,env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow-x:hidden}.search-item{grid-template-columns:60px 1fr}.search-item small{display:none}}</style>

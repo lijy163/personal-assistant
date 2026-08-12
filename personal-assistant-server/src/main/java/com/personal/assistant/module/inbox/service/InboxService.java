@@ -74,6 +74,20 @@ public class InboxService {
         mapper.updateById(item);
     }
 
+    @Transactional
+    public int archiveBatch(Long uid, List<Long> ids) {
+        LocalDateTime now = LocalDateTime.now();
+        int updated = 0;
+        for (InboxItem item : mapper.selectList(new LambdaQueryWrapper<InboxItem>()
+                .eq(InboxItem::getUserId, uid).in(InboxItem::getId, ids))) {
+            if ("ARCHIVED".equals(item.getStatus())) continue;
+            item.setStatus("ARCHIVED");
+            item.setConfirmedAt(now);
+            updated += mapper.updateById(item);
+        }
+        return updated;
+    }
+
     private InboxItem createItem(Long uid, String content, String tags, String remark, String source,
                                  LocalDateTime recordedAt, String inputType) {
         Suggestion suggestion = suggest(content);

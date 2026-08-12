@@ -12,6 +12,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
@@ -59,6 +61,20 @@ class InboxServiceTest {
 
         assertThrows(BusinessException.class,
                 () -> service.confirm(7L, 1L, new InboxConfirmRequest("NOTE")));
+    }
+
+    @Test
+    void archivesSelectedPendingItems() {
+        InboxItem first = item(1L, 7L);
+        InboxItem second = item(2L, 7L);
+        when(mapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(first, second));
+        when(mapper.updateById(org.mockito.ArgumentMatchers.any(InboxItem.class))).thenReturn(1);
+
+        int updated = service.archiveBatch(7L, List.of(1L, 2L));
+
+        assertEquals(2, updated);
+        assertEquals("ARCHIVED", first.getStatus());
+        assertEquals("ARCHIVED", second.getStatus());
     }
 
     private InboxItem item(Long id, Long userId) {

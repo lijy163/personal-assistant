@@ -13,6 +13,8 @@ public final class GlobalSearchSql {
                 + "union all select 'STOCK',id,stock_name,coalesce(reason,'')||' '||coalesce(remark,''),created_at,'/stocks' from stock_watch_item where user_id=#{uid} and (stock_name||' '||stock_code||' '||coalesce(reason,'')||' '||coalesce(remark,'')) ilike '%'||#{keyword}||'%' "
                 + "union all select 'TRADING_REVIEW',id,trade_date::text||' '||coalesce(market_stage,'复盘'),coalesce(auto_conclusion,'')||' '||coalesce(manual_judgment,''),created_at,'/trading-reviews' from trading_daily_review where user_id=#{uid} and (coalesce(auto_conclusion,'')||' '||coalesce(manual_judgment,'')||' '||coalesce(sectors,'')||' '||coalesce(core_stocks,'')) ilike '%'||#{keyword}||'%' "
                 + "union all select 'TRADE',id,stock_name||' '||stock_code,coalesce(buy_logic,'')||' '||coalesce(sell_logic,'')||' '||coalesce(notes,''),created_at,'/trading-reviews' from trading_log where user_id=#{uid} and (stock_name||' '||stock_code||' '||coalesce(buy_logic,'')||' '||coalesce(sell_logic,'')||' '||coalesce(notes,'')) ilike '%'||#{keyword}||'%'"
-                + ") search_results order by occurred_at desc limit 100";
+                + ") search_results order by "
+                + "case when lower(title)=lower(#{keyword}) then 3 when lower(title) like lower(#{keyword})||'%' then 2 when lower(title) like '%'||lower(#{keyword})||'%' then 1 else 0 end desc, "
+                + "case when lower(snippet) like '%'||lower(#{keyword})||'%' then 1 else 0 end desc, occurred_at desc limit 100";
     }
 }

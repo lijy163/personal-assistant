@@ -31,8 +31,9 @@ public class BlogAdminController {
 
     @GetMapping("/posts")
     public ApiResponse<List<BlogPost>> list(@RequestParam(required = false) String status,
-                                            @RequestParam(required = false) String keyword) {
-        return ApiResponse.success(blogs.adminList(uid(), status, keyword));
+                                            @RequestParam(required = false) String keyword,
+                                            @RequestParam(required = false) String site) {
+        return ApiResponse.success(blogs.adminList(uid(), status, keyword, site));
     }
 
     @GetMapping("/posts/{id}")

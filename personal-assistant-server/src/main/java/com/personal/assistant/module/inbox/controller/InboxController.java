@@ -3,6 +3,7 @@ package com.personal.assistant.module.inbox.controller;
 import com.personal.assistant.common.response.ApiResponse;
 import com.personal.assistant.common.security.SecurityContextHelper;
 import com.personal.assistant.module.inbox.dto.InboxCollectRequest;
+import com.personal.assistant.module.inbox.dto.InboxBatchRequest;
 import com.personal.assistant.module.inbox.dto.InboxConfirmRequest;
 import com.personal.assistant.module.inbox.dto.InboxCreateRequest;
 import com.personal.assistant.module.inbox.entity.InboxItem;
@@ -85,5 +86,10 @@ public class InboxController {
     public ApiResponse<Void> archive(@PathVariable Long id) {
         service.archive(uid(), id);
         return ApiResponse.success();
+    }
+
+    @PostMapping("/batch/archive")
+    public ApiResponse<Integer> archiveBatch(@Valid @RequestBody InboxBatchRequest request) {
+        return ApiResponse.success(service.archiveBatch(uid(), request.ids()));
     }
 }

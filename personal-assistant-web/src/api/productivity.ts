@@ -12,6 +12,7 @@ export const collectInbox=(payload:{content:string;tags:string;remark:string;sou
 export const downloadInboxAttachment=async(id:number,name:string)=>{const response=await http.get('/inbox/attachments/'+id,{responseType:'blob'});const url=URL.createObjectURL(response as unknown as Blob);const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 export const confirmInbox=(id:number,confirmedType:string)=>http.patch(`/inbox/${id}/confirm`,{confirmedType});
 export const archiveInbox=(id:number)=>http.patch(`/inbox/${id}/archive`);
+export const archiveInboxBatch=(ids:number[])=>http.post<unknown,{data:number}>('/inbox/batch/archive',{ids});
 export const getDailyDashboard=()=>http.get<unknown,{data:DailyDashboard}>('/dashboard/daily');
 export const getDailyInspiration=()=>http.get<unknown,{data:DailyInspiration}>('/dashboard/daily-inspiration');
 export const listReports=()=>http.get<unknown,{data:GeneratedReport[]}>('/reports');
