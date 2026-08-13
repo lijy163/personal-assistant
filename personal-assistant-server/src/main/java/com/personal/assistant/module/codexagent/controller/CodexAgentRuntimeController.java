@@ -36,6 +36,19 @@ public class CodexAgentRuntimeController {
         return ApiResponse.success(tasks.renew(agentId(authentication), id, request));
     }
 
+    @PostMapping("/tasks/{id}/control")
+    public ApiResponse<TaskControl> control(Authentication authentication, @PathVariable Long id,
+                                            @Valid @RequestBody LeaseRequest request) {
+        return ApiResponse.success(tasks.control(agentId(authentication), id, request));
+    }
+
+    @PostMapping("/tasks/{id}/cancelled")
+    public ApiResponse<Void> cancelled(Authentication authentication, @PathVariable Long id,
+                                       @Valid @RequestBody LeaseRequest request) {
+        tasks.cancelled(agentId(authentication), id, request);
+        return ApiResponse.success();
+    }
+
     @PostMapping("/tasks/{id}/events")
     public ApiResponse<Void> event(Authentication authentication, @PathVariable Long id,
                                    @Valid @RequestBody EventRequest request) {

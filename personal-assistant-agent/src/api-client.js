@@ -18,6 +18,15 @@ export class AgentApiClient {
     return response.data;
   }
 
+  async control(task) {
+    const response = await this.request(`/tasks/${task.taskId}/control`, { leaseId: task.leaseId });
+    return response.data;
+  }
+
+  cancelled(task) {
+    return this.request(`/tasks/${task.taskId}/cancelled`, { leaseId: task.leaseId });
+  }
+
   event(task, eventType, content) {
     return this.request(`/tasks/${task.taskId}/events`, {
       leaseId: task.leaseId,

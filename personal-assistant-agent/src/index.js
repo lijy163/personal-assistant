@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AgentApiClient } from './api-client.js';
-import { runCodex } from './codex-runner.js';
+import { CodexCancelledError, runCodex } from './codex-runner.js';
 
 const configPath = path.resolve(process.env.PA_AGENT_CONFIG || './config.json');
 const config = JSON.parse(await readFile(configPath, 'utf8'));
@@ -45,20 +45,47 @@ console.log('[agent] 已停止');
 
 async function executeTask(api, task) {
   console.log(`[task:${task.taskId}] 开始执行 ${task.projectKey} (${task.permissionMode})`);
+  const cancellation = new AbortController();
   const renewTimer = setInterval(() => api.renew(task).catch(error => {
     console.error(`[task:${task.taskId}] 续租失败：${error.message}`);
   }), 60_000);
+  const controlTimer = setInterval(() => api.control(task).then(control => {
+    if (control.cancelRequested && !cancellation.signal.aborted) {
+      console.log(`[task:${task.taskId}] 收到终止请求`);
+      cancellation.abort();
+    }
+  }).catch(error => {
+    console.error(`[task:${task.taskId}] 查询终止状态失败：${error.message}`);
+  }), 2_000);
   try {
-    const result = await runCodex(config, task, (type, content) => api.event(task, type, content));
+    const result = await runCodex(config, task, (type, content) => api.event(task, type, content), cancellation.signal);
     await api.complete(task, result);
     console.log(`[task:${task.taskId}] 执行完成`);
   } catch (error) {
+    if (error instanceof CodexCancelledError) {
+      await confirmCancelled(api, task);
+      console.log(`[task:${task.taskId}] 已终止`);
+      return;
+    }
     await api.fail(task, error, error?.threadId).catch(reportError => {
       console.error(`[task:${task.taskId}] 失败状态回传失败：${reportError.message}`);
     });
     console.error(`[task:${task.taskId}] ${error instanceof Error ? error.message : error}`);
   } finally {
     clearInterval(renewTimer);
+    clearInterval(controlTimer);
+  }
+}
+
+async function confirmCancelled(api, task) {
+  while (!stopping) {
+    try {
+      await api.cancelled(task);
+      return;
+    } catch (error) {
+      console.error(`[task:${task.taskId}] 确认终止失败，将重试：${error.message}`);
+      await sleep(pollIntervalMs);
+    }
   }
 }
 

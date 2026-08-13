@@ -113,10 +113,16 @@ if ! compose build --progress=plain; then
   fail "Docker 镜像构建失败"
 fi
 
-log "启动服务"
-if ! compose up -d; then
+log "启动数据库和辅助服务"
+if ! compose up -d postgres adminer rain7-blog; then
   print_diagnostics
-  fail "Docker Compose 启动失败"
+  fail "Docker Compose 基础服务启动失败"
+fi
+
+log "强制替换应用服务（backend、Codex Agent、nginx）"
+if ! compose up -d --force-recreate backend codex-agent codex-public-agent nginx; then
+  print_diagnostics
+  fail "Docker Compose 应用服务启动失败"
 fi
 
 log "等待后端健康检查"

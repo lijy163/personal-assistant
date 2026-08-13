@@ -81,8 +81,17 @@ public class CodexTaskService {
     @Transactional
     public void cancel(Long userId, Long taskId) {
         CodexTask task = requireOwned(userId, taskId);
+        if ("RUNNING".equals(task.getStatus())) {
+            task.setStatus("CANCEL_REQUESTED");
+            task.setUpdatedAt(LocalDateTime.now());
+            tasks.updateById(task);
+            return;
+        }
+        if ("CANCEL_REQUESTED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
+            return;
+        }
         if (!"PENDING".equals(task.getStatus())) {
-            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "第一版只支持取消等待中的任务");
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "只有等待中或执行中的任务可以终止");
         }
         task.setStatus("CANCELLED");
         task.setLeaseId(null);
@@ -110,7 +119,7 @@ public class CodexTaskService {
 
     @Transactional
     public LocalDateTime renew(Long agentId, Long taskId, LeaseRequest request) {
-        CodexTask task = requireLease(agentId, taskId, request.leaseId());
+        CodexTask task = requireActiveLease(agentId, taskId, request.leaseId());
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(LEASE_MINUTES);
         task.setLeaseExpiresAt(expiresAt);
         task.setUpdatedAt(LocalDateTime.now());
@@ -118,9 +127,24 @@ public class CodexTaskService {
         return expiresAt;
     }
 
+    public TaskControl control(Long agentId, Long taskId, LeaseRequest request) {
+        CodexTask task = requireActiveLease(agentId, taskId, request.leaseId());
+        return new TaskControl("CANCEL_REQUESTED".equals(task.getStatus()));
+    }
+
+    @Transactional
+    public void cancelled(Long agentId, Long taskId, LeaseRequest request) {
+        CodexTask task = requireActiveLease(agentId, taskId, request.leaseId());
+        if (!"CANCEL_REQUESTED".equals(task.getStatus())) {
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "任务未请求终止");
+        }
+        task.setStatus("CANCELLED");
+        finish(task);
+    }
+
     @Transactional
     public void addEvent(Long agentId, Long taskId, EventRequest request) {
-        requireLease(agentId, taskId, request.leaseId());
+        requireActiveLease(agentId, taskId, request.leaseId());
         CodexTaskEvent event = new CodexTaskEvent();
         event.setTaskId(taskId);
         event.setEventType(request.eventType().trim());
@@ -131,7 +155,12 @@ public class CodexTaskService {
 
     @Transactional
     public void complete(Long agentId, Long taskId, CompleteRequest request) {
-        CodexTask task = requireLease(agentId, taskId, request.leaseId());
+        CodexTask task = requireActiveLease(agentId, taskId, request.leaseId());
+        if ("CANCEL_REQUESTED".equals(task.getStatus())) {
+            task.setStatus("CANCELLED");
+            finish(task);
+            return;
+        }
         task.setStatus("COMPLETED");
         task.setThreadId(request.threadId());
         task.setFinalResponse(request.finalResponse());
@@ -142,7 +171,12 @@ public class CodexTaskService {
 
     @Transactional
     public void fail(Long agentId, Long taskId, FailRequest request) {
-        CodexTask task = requireLease(agentId, taskId, request.leaseId());
+        CodexTask task = requireActiveLease(agentId, taskId, request.leaseId());
+        if ("CANCEL_REQUESTED".equals(task.getStatus())) {
+            task.setStatus("CANCELLED");
+            finish(task);
+            return;
+        }
         task.setStatus("FAILED");
         task.setThreadId(request.threadId());
         task.setErrorMessage(request.errorMessage());
@@ -164,6 +198,16 @@ public class CodexTaskService {
         if (task == null || !agentId.equals(task.getAgentId()) || !"RUNNING".equals(task.getStatus())
                 || !leaseId.equals(task.getLeaseId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "任务租约无效或已被重新领取");
+        }
+        return task;
+    }
+
+    private CodexTask requireActiveLease(Long agentId, Long taskId, String leaseId) {
+        CodexTask task = tasks.selectById(taskId);
+        if (task == null || !agentId.equals(task.getAgentId())
+                || !("RUNNING".equals(task.getStatus()) || "CANCEL_REQUESTED".equals(task.getStatus()))
+                || !leaseId.equals(task.getLeaseId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "任务租约无效或已结束");
         }
         return task;
     }

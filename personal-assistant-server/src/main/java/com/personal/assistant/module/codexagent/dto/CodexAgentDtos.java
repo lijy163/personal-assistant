@@ -44,6 +44,9 @@ public final class CodexAgentDtos {
     public record LeaseRequest(@NotBlank String leaseId) {
     }
 
+    public record TaskControl(boolean cancelRequested) {
+    }
+
     public record EventRequest(@NotBlank String leaseId, @NotBlank @Size(max = 80) String eventType,
                                @NotBlank @Size(max = 60000) String content) {
     }

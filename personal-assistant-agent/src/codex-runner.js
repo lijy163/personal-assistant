@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-export async function runCodex(config, task, onEvent) {
+export async function runCodex(config, task, onEvent, signal) {
   const project = await validateTask(config, task);
   const sandbox = task.permissionMode === 'WORKSPACE_WRITE' ? 'workspace-write' : 'read-only';
   const modelArgs = task.model ? ['--model', task.model] : [];
@@ -18,6 +18,7 @@ export async function runCodex(config, task, onEvent) {
     const codexCommand = config.codexCommand ?? 'codex';
     const child = spawn(codexCommand, args, {
       cwd: project.path,
+      detached: process.platform !== 'win32',
       shell: false,
       windowsHide: true,
       env: codexEnvironment(),
@@ -29,6 +30,12 @@ export async function runCodex(config, task, onEvent) {
     let eventChain = Promise.resolve();
     const stdoutLines = readline.createInterface({ input: child.stdout });
     const timeout = setTimeout(() => child.kill(), timeoutMs);
+    let forceKillTimer;
+    const cancel = () => {
+      terminateProcessTree(child, 'SIGTERM');
+      forceKillTimer = setTimeout(() => terminateProcessTree(child, 'SIGKILL'), 5_000);
+    };
+    signal?.addEventListener('abort', cancel, { once: true });
 
     stdoutLines.on('line', line => {
       let event;
@@ -50,15 +57,36 @@ export async function runCodex(config, task, onEvent) {
     });
     child.on('error', error => {
       clearTimeout(timeout);
+      clearTimeout(forceKillTimer);
+      signal?.removeEventListener('abort', cancel);
       reject(new Error(`无法启动 Codex：${error.message}`));
     });
     child.on('close', async code => {
       clearTimeout(timeout);
+      clearTimeout(forceKillTimer);
+      signal?.removeEventListener('abort', cancel);
       await eventChain;
+      if (signal?.aborted) {
+        reject(new CodexCancelledError());
+        return;
+      }
       if (code === 0) resolve({ threadId, finalResponse: appendWorkspace(finalResponse, project) });
       else reject(new CodexRunError(`Codex 执行失败（退出码 ${code}）：${stderr || '没有错误输出'}`, threadId));
     });
   });
+}
+
+function terminateProcessTree(child, signal) {
+  if (!child.pid) return;
+  if (process.platform === 'win32') {
+    execFile('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true }, () => undefined);
+    return;
+  }
+  try {
+    process.kill(-child.pid, signal);
+  } catch {
+    child.kill(signal);
+  }
 }
 
 function codexEnvironment() {
@@ -113,5 +141,12 @@ export class CodexRunError extends Error {
   constructor(message, threadId) {
     super(message);
     this.threadId = threadId;
+  }
+}
+
+export class CodexCancelledError extends Error {
+  constructor() {
+    super('任务已由用户终止');
+    this.name = 'CodexCancelledError';
   }
 }

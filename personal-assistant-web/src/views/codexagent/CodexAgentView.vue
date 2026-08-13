@@ -39,7 +39,7 @@
         <el-table-column prop="prompt" label="任务" min-width="260" show-overflow-tooltip/>
         <el-table-column label="权限" width="110"><template #default="{ row }">{{ row.permissionMode === 'READ_ONLY' ? '只读' : '允许修改' }}</template></el-table-column>
         <el-table-column label="状态" width="110"><template #default="{ row }"><el-tag :type="taskTag(row.status)">{{ taskStatus(row.status) }}</el-tag></template></el-table-column>
-        <el-table-column label="操作" width="130"><template #default="{ row }"><el-button link type="primary" @click.stop="openTask(row)">详情</el-button><el-button v-if="row.status === 'PENDING'" link type="danger" @click.stop="cancel(row.id)">取消</el-button></template></el-table-column>
+        <el-table-column label="操作" width="150"><template #default="{ row }"><el-button link type="primary" @click.stop="openTask(row)">详情</el-button><el-button v-if="canCancel(row)" link type="danger" :loading="cancellingTaskId === row.id" @click.stop="cancel(row)">{{ row.status === 'PENDING' ? '取消' : '终止' }}</el-button></template></el-table-column>
       </el-table>
       <el-empty v-if="!loading && !tasks.length" description="暂无远程任务"/>
     </el-card>
@@ -83,6 +83,7 @@
     </el-dialog>
     <el-drawer v-model="detailVisible" title="Codex 任务详情" size="60%">
       <template v-if="selectedTask">
+        <div v-if="canCancel(selectedTask)" class="detail-actions"><el-button type="danger" :loading="cancellingTaskId === selectedTask.id" @click="cancel(selectedTask)">{{ selectedTask.status === 'PENDING' ? '取消任务' : '终止执行' }}</el-button></div>
         <el-descriptions :column="2" border>
           <el-descriptions-item label="电脑">{{ selectedTask.agentName }}</el-descriptions-item><el-descriptions-item label="项目">{{ selectedTask.projectKey }}</el-descriptions-item>
           <el-descriptions-item label="状态">{{ taskStatus(selectedTask.status) }}</el-descriptions-item><el-descriptions-item label="权限">{{ selectedTask.permissionMode }}</el-descriptions-item>
@@ -120,6 +121,7 @@ const effortOptions = [
   { label: '高', value: 'high' }, { label: '极高', value: 'xhigh' },
 ];
 const agentName = ref('本机 Codex'); const createdToken = ref(''); const selectedTask = ref<CodexTask>();
+const cancellingTaskId = ref<number>();
 const form = reactive({ agentId: undefined as number | undefined, projectKey: 'personal-assistant', permissionMode: 'READ_ONLY', prompt: '' });
 const activeAgents = computed(() => agents.value.filter(agent => !agent.revokedAt));
 const cloudReady = computed(() => Boolean(cloudConfig.value?.managementAgentId && cloudConfig.value?.managementTokenConfigured && cloudConfig.value?.apiKeyConfigured));
@@ -127,8 +129,9 @@ const formatTime = (value?: string) => value ? new Date(value).toLocaleString('z
 const agentStatus = (value: string) => ({ ONLINE: '在线', OFFLINE: '离线', REVOKED: '已撤销' }[value] || value);
 const agentTag = (value: string) => value === 'ONLINE' ? 'success' : value === 'REVOKED' ? 'info' : 'warning';
 const effortLabel = (value?: string) => effortOptions.find(item => item.value === (value || 'medium'))?.label || value || '中';
-const taskStatus = (value: string) => ({ PENDING: '等待电脑', RUNNING: '执行中', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消' }[value] || value);
-const taskTag = (value: string) => ({ PENDING: 'warning', RUNNING: 'primary', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'info' }[value] || 'info');
+const taskStatus = (value: string) => ({ PENDING: '等待电脑', RUNNING: '执行中', CANCEL_REQUESTED: '正在终止', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已终止' }[value] || value);
+const taskTag = (value: string) => ({ PENDING: 'warning', RUNNING: 'primary', CANCEL_REQUESTED: 'warning', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'info' }[value] || 'info');
+const canCancel = (task: CodexTask) => task.status === 'PENDING' || task.status === 'RUNNING';
 async function load() { loading.value = true; try { const [agentResult, taskResult, cloudResult] = await Promise.all([listCodexAgents(), listCodexTasks(), getCodexCloudConfig()]); agents.value = agentResult.data; tasks.value = taskResult.data; cloudConfig.value = cloudResult.data; Object.assign(cloudForm, { managementAgentId: cloudResult.data.managementAgentId, managementToken: '', publicAgentId: cloudResult.data.publicAgentId, publicToken: '', apiKey: '', baseUrl: cloudResult.data.baseUrl || 'https://www.xshoow.cloud/v1', publicEnabled: cloudResult.data.publicEnabled }); if (!form.agentId && activeAgents.value.length) form.agentId = activeAgents.value[0].id; } finally { loading.value = false; } }
 async function saveCloud() { savingCloud.value = true; try { const result = await saveCodexCloudConfig({ managementAgentId: cloudForm.managementAgentId, managementToken: cloudForm.managementToken.trim() || undefined, publicAgentId: cloudForm.publicAgentId, publicToken: cloudForm.publicToken.trim() || undefined, apiKey: cloudForm.apiKey.trim() || undefined, baseUrl: cloudForm.baseUrl.trim(), publicEnabled: cloudForm.publicEnabled }); cloudConfig.value = result.data; cloudForm.managementToken = ''; cloudForm.publicToken = ''; cloudForm.apiKey = ''; ElMessage.success('云端配置已保存，Agent 将在几秒内自动上线'); await load(); } finally { savingCloud.value = false; } }
 async function createAgent() { if (!agentName.value.trim()) return ElMessage.warning('请输入电脑名称'); const result = await createCodexAgent({ name: agentName.value.trim() }); createdToken.value = result.data.token; agentDialog.value = false; tokenDialog.value = true; await load(); }
@@ -137,12 +140,13 @@ async function revoke(id: number) { await ElMessageBox.confirm('撤销后该电�
 function openModel(agent: CodexAgent) { editingAgent.value = agent; modelForm.model = agent.model || ''; modelForm.reasoningEffort = agent.reasoningEffort || 'medium'; modelDialog.value = true; }
 async function saveModel() { if (!editingAgent.value) return; savingModel.value = true; try { await updateCodexAgentModel(editingAgent.value.id, { model: modelForm.model.trim() || undefined, reasoningEffort: modelForm.reasoningEffort }); ElMessage.success('模型配置已保存，将用于后续新任务'); modelDialog.value = false; await load(); } finally { savingModel.value = false; } }
 async function createTask() { if (!form.agentId || !form.projectKey.trim() || !form.prompt.trim()) return ElMessage.warning('请完整填写任务'); if (form.permissionMode === 'WORKSPACE_WRITE') await ElMessageBox.confirm('该任务允许 Codex 修改本地项目文件，确认提交？', '写入权限确认', { type: 'warning' }); await createCodexTask({ agentId: form.agentId, projectKey: form.projectKey.trim(), permissionMode: form.permissionMode, prompt: form.prompt.trim() }); form.prompt = ''; taskDialog.value = false; ElMessage.success('任务已提交'); await load(); }
-async function cancel(id: number) { await cancelCodexTask(id); ElMessage.success('任务已取消'); await load(); }
+async function cancel(task: CodexTask) { await ElMessageBox.confirm(task.status === 'RUNNING' ? '将立即终止该电脑上正在运行的 Codex 进程，确认继续？' : '确认取消这个等待中的任务？', task.status === 'RUNNING' ? '终止任务' : '取消任务', { type: 'warning', confirmButtonText: task.status === 'RUNNING' ? '立即终止' : '确认取消' }); cancellingTaskId.value = task.id; try { await cancelCodexTask(task.id); ElMessage.success(task.status === 'RUNNING' ? '已发送终止请求' : '任务已取消'); await refreshTask(task.id); if (task.status === 'RUNNING') window.setTimeout(() => refreshTask(task.id), 3000); } finally { cancellingTaskId.value = undefined; } }
+async function refreshTask(id: number) { await load(); selectedTask.value = tasks.value.find(item => item.id === id); }
 async function openTask(task: CodexTask) { selectedTask.value = task; events.value = (await listCodexTaskEvents(task.id)).data; detailVisible.value = true; }
 function prettyEvent(content: string) { try { return JSON.stringify(JSON.parse(content), null, 2); } catch { return content; } }
 onMounted(load);
 </script>
 
 <style scoped>
-.page{display:grid;gap:16px}.header{display:flex;align-items:center;justify-content:space-between;font-weight:600}.cloud-form{max-width:760px;margin-top:20px}.public-link{margin-left:18px;color:#64748b}.public-link a{color:#409eff}.table{margin-top:16px}.token{margin-top:16px}.pre,pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:14px;background:#f6f8fa;border-radius:6px}.error{color:#b42318}.page h3{margin-top:22px}
+.page{display:grid;gap:16px}.header{display:flex;align-items:center;justify-content:space-between;font-weight:600}.cloud-form{max-width:760px;margin-top:20px}.public-link{margin-left:18px;color:#64748b}.public-link a{color:#409eff}.table{margin-top:16px}.token{margin-top:16px}.detail-actions{display:flex;justify-content:flex-end;margin-bottom:16px}.pre,pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:14px;background:#f6f8fa;border-radius:6px}.error{color:#b42318}.page h3{margin-top:22px}
 </style>
