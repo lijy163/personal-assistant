@@ -1,21 +1,26 @@
-import { spawn } from 'node:child_process';
-import { stat } from 'node:fs/promises';
+import { execFile, spawn } from 'node:child_process';
+import { mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import readline from 'node:readline';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 export async function runCodex(config, task, onEvent) {
   const project = await validateTask(config, task);
   const sandbox = task.permissionMode === 'WORKSPACE_WRITE' ? 'workspace-write' : 'read-only';
-  const args = ['exec', '--json', '--sandbox', sandbox, '--ask-for-approval', 'never', task.prompt];
+  const modelArgs = task.model ? ['--model', task.model] : [];
+  const reasoningArgs = task.reasoningEffort ? ['-c', `model_reasoning_effort=${JSON.stringify(task.reasoningEffort)}`] : [];
+  const args = [...(config.codexArgs ?? []), ...modelArgs, ...reasoningArgs, '--ask-for-approval', 'never', 'exec', '--json', '--sandbox', sandbox, task.prompt];
   const timeoutMs = (config.taskTimeoutMinutes ?? 60) * 60_000;
 
   return new Promise((resolve, reject) => {
-    const codexCommand = config.codexCommand ?? (process.platform === 'win32' ? 'codex.cmd' : 'codex');
+    const codexCommand = config.codexCommand ?? 'codex';
     const child = spawn(codexCommand, args, {
       cwd: project.path,
       shell: false,
       windowsHide: true,
-      env: process.env,
+      env: codexEnvironment(),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let threadId;
@@ -50,10 +55,16 @@ export async function runCodex(config, task, onEvent) {
     child.on('close', async code => {
       clearTimeout(timeout);
       await eventChain;
-      if (code === 0) resolve({ threadId, finalResponse });
+      if (code === 0) resolve({ threadId, finalResponse: appendWorkspace(finalResponse, project) });
       else reject(new CodexRunError(`Codex 执行失败（退出码 ${code}）：${stderr || '没有错误输出'}`, threadId));
     });
   });
+}
+
+function codexEnvironment() {
+  const environment = { ...process.env };
+  if (process.env.CODEX_API_KEY) environment.CODEX_API_KEY = process.env.CODEX_API_KEY;
+  return environment;
 }
 
 async function validateTask(config, task) {
@@ -65,7 +76,24 @@ async function validateTask(config, task) {
   const projectPath = path.resolve(project.path);
   const info = await stat(projectPath).catch(() => null);
   if (!info?.isDirectory()) throw new Error(`项目目录不存在：${projectPath}`);
+  if (task.permissionMode === 'WORKSPACE_WRITE' && project.worktreeRoot) {
+    const worktreeRoot = path.resolve(project.worktreeRoot);
+    const worktreePath = path.join(worktreeRoot, `task-${task.taskId}`);
+    const branch = `codex/task-${task.taskId}`;
+    await mkdir(worktreeRoot, { recursive: true });
+    const git = project.gitCommand ?? 'git';
+    await execFileAsync(git, ['clone', '--no-hardlinks', projectPath, worktreePath],
+      { windowsHide: true, timeout: 120_000 });
+    await execFileAsync(git, ['-C', worktreePath, 'checkout', '-b', branch],
+      { windowsHide: true, timeout: 60_000 });
+    return { ...project, path: worktreePath, branch };
+  }
   return { ...project, path: projectPath };
+}
+
+function appendWorkspace(response, project) {
+  if (!project.branch) return response;
+  return `${response}\n\n执行分支：${project.branch}\n隔离工作目录：${project.path}`;
 }
 
 function shouldReport(event) {

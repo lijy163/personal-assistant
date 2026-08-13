@@ -37,6 +37,13 @@ public class CodexAgentManagementController {
         return ApiResponse.success();
     }
 
+    @PatchMapping("/{id}/model")
+    public ApiResponse<Void> updateModel(@PathVariable Long id,
+                                         @Valid @RequestBody UpdateAgentModelRequest request) {
+        agents.updateModel(SecurityContextHelper.currentUserId(), id, request.model(), request.reasoningEffort());
+        return ApiResponse.success();
+    }
+
     @PostMapping("/tasks")
     public ApiResponse<Long> createTask(@Valid @RequestBody CreateTaskRequest request) {
         return ApiResponse.success(tasks.create(SecurityContextHelper.currentUserId(), request));

@@ -1,0 +1,14 @@
+{
+  "serverUrl": "http://backend:8080",
+  "pollIntervalSeconds": 5,
+  "taskTimeoutMinutes": 60,
+  "codexCommand": "codex",
+  "projects": {
+    "personal-assistant": {
+      "path": "/workspace/personal-assistant",
+      "allowWrite": true,
+      "worktreeRoot": "/workspace/codex-worktrees",
+      "gitCommand": "git"
+    }
+  }
+}

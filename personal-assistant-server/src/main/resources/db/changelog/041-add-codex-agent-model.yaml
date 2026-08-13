@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 041-add-codex-agent-model
+      author: personal-assistant
+      changes:
+        - addColumn:
+            tableName: codex_agent
+            columns:
+              - column: { name: model, type: varchar(100) }
+              - column: { name: reasoning_effort, type: varchar(20), defaultValue: medium }
+        - addColumn:
+            tableName: codex_task
+            columns:
+              - column: { name: model, type: varchar(100) }
+              - column: { name: reasoning_effort, type: varchar(20) }

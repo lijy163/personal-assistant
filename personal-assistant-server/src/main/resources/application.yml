@@ -43,3 +43,20 @@ app:
     script: ${BACKUP_SCRIPT:/app/scripts/backup.sh}
     directory: ${BACKUP_DIR:/app/backup}
     retention-days: ${BACKUP_RETENTION_DAYS:14}
+  wecom:
+    enabled: ${WECOM_ENABLED:false}
+    corp-id: ${WECOM_CORP_ID:}
+    agent-id: ${WECOM_AGENT_ID:}
+    secret: ${WECOM_SECRET:}
+    token: ${WECOM_TOKEN:}
+    encoding-aes-key: ${WECOM_ENCODING_AES_KEY:}
+    default-codex-agent-id: ${WECOM_DEFAULT_CODEX_AGENT_ID:}
+    default-project-key: ${WECOM_DEFAULT_PROJECT_KEY:personal-assistant}
+    allowed-users: ${WECOM_ALLOWED_USERS:}
+  public-codex:
+    enabled: ${PUBLIC_CODEX_ENABLED:false}
+    agent-id: ${PUBLIC_CODEX_AGENT_ID:}
+    project-key: ${PUBLIC_CODEX_PROJECT_KEY:public-qa}
+    minimum-interval-seconds: ${PUBLIC_CODEX_MINIMUM_INTERVAL_SECONDS:10}
+    max-active-tasks-per-session: ${PUBLIC_CODEX_MAX_ACTIVE_TASKS_PER_SESSION:2}
+    max-active-tasks: ${PUBLIC_CODEX_MAX_ACTIVE_TASKS:20}

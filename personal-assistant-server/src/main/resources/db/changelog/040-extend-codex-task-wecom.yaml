@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 040-extend-codex-task-wecom
+      author: personal-assistant
+      changes:
+        - addColumn:
+            tableName: codex_task
+            columns:
+              - column: { name: source, type: varchar(30), defaultValue: WEB, constraints: { nullable: false } }
+              - column: { name: external_user_id, type: varchar(100) }
+              - column: { name: external_message_id, type: varchar(100) }
+        - createIndex:
+            tableName: codex_task
+            indexName: idx_codex_task_external_message
+            unique: true
+            columns: [{ column: { name: source } }, { column: { name: external_message_id } }]

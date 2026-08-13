@@ -6,9 +6,11 @@
       <el-table :data="agents" class="table">
         <el-table-column prop="name" label="电脑名称" min-width="160"/>
         <el-table-column prop="tokenPrefix" label="令牌前缀" min-width="180"/>
+        <el-table-column label="模型" min-width="150"><template #default="{ row }">{{ row.model || 'CLI 默认' }}</template></el-table-column>
+        <el-table-column label="推理强度" width="110"><template #default="{ row }">{{ effortLabel(row.reasoningEffort) }}</template></el-table-column>
         <el-table-column label="状态" width="100"><template #default="{ row }"><el-tag :type="agentTag(row.status)">{{ agentStatus(row.status) }}</el-tag></template></el-table-column>
         <el-table-column label="最后在线" width="180"><template #default="{ row }">{{ formatTime(row.lastSeenAt) }}</template></el-table-column>
-        <el-table-column label="操作" width="90"><template #default="{ row }"><el-button v-if="!row.revokedAt" link type="danger" @click="revoke(row.id)">撤销</el-button></template></el-table-column>
+        <el-table-column label="操作" width="150"><template #default="{ row }"><el-button v-if="!row.revokedAt" link type="primary" @click="openModel(row)">配置</el-button><el-button v-if="!row.revokedAt" link type="danger" @click="revoke(row.id)">撤销</el-button></template></el-table-column>
       </el-table>
     </el-card>
 
@@ -34,6 +36,25 @@
       <el-alert title="关闭后不能再次查看。请将令牌配置到电脑的 PA_AGENT_TOKEN 环境变量。" type="warning" :closable="false"/>
       <el-input v-model="createdToken" readonly class="token"><template #append><el-button @click="copyToken">复制</el-button></template></el-input>
     </el-dialog>
+    <el-dialog v-model="modelDialog" title="配置模型与推理强度" width="520px">
+      <el-form label-width="90px">
+        <el-form-item label="电脑名称"><span>{{ editingAgent?.name }}</span></el-form-item>
+        <el-form-item label="API 服务"><el-input value="https://www.xshoow.cloud/v1" disabled/></el-form-item>
+        <el-form-item label="模型">
+          <el-select v-model="modelForm.model" filterable allow-create default-first-option clearable
+            placeholder="不填写则使用 Codex CLI 默认模型" style="width:100%">
+            <el-option v-for="model in modelOptions" :key="model.value" :label="model.label" :value="model.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="推理强度">
+          <el-select v-model="modelForm.reasoningEffort" style="width:100%">
+            <el-option v-for="effort in effortOptions" :key="effort.value" :label="effort.label" :value="effort.value"/>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-alert title="模型名称必须与 XSHOOW 支持的模型 ID 完全一致；保存后只影响新创建的任务。" type="info" :closable="false"/>
+      <template #footer><el-button @click="modelDialog = false">取消</el-button><el-button type="primary" :loading="savingModel" @click="saveModel">保存</el-button></template>
+    </el-dialog>
     <el-dialog v-model="taskDialog" title="新建远程 Codex 任务" width="640px">
       <el-form :model="form" label-width="100px">
         <el-form-item label="执行电脑"><el-select v-model="form.agentId" style="width:100%"><el-option v-for="agent in activeAgents" :key="agent.id" :label="agent.name" :value="agent.id"/></el-select></el-form-item>
@@ -49,6 +70,7 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="电脑">{{ selectedTask.agentName }}</el-descriptions-item><el-descriptions-item label="项目">{{ selectedTask.projectKey }}</el-descriptions-item>
           <el-descriptions-item label="状态">{{ taskStatus(selectedTask.status) }}</el-descriptions-item><el-descriptions-item label="权限">{{ selectedTask.permissionMode }}</el-descriptions-item>
+          <el-descriptions-item label="模型">{{ selectedTask.model || 'CLI 默认' }}</el-descriptions-item><el-descriptions-item label="推理强度">{{ effortLabel(selectedTask.reasoningEffort) }}</el-descriptions-item>
           <el-descriptions-item label="Thread ID" :span="2">{{ selectedTask.threadId || '-' }}</el-descriptions-item>
         </el-descriptions>
         <h3>任务内容</h3><div class="pre">{{ selectedTask.prompt }}</div>
@@ -63,22 +85,37 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
-import { cancelCodexTask, createCodexAgent, createCodexTask, listCodexAgents, listCodexTaskEvents, listCodexTasks, revokeCodexAgent, type CodexAgent, type CodexTask, type CodexTaskEvent } from '@/api/codexAgent';
+import { cancelCodexTask, createCodexAgent, createCodexTask, listCodexAgents, listCodexTaskEvents, listCodexTasks, revokeCodexAgent, updateCodexAgentModel, type CodexAgent, type CodexTask, type CodexTaskEvent } from '@/api/codexAgent';
 
 const agents = ref<CodexAgent[]>([]); const tasks = ref<CodexTask[]>([]); const events = ref<CodexTaskEvent[]>([]); const loading = ref(false);
 const agentDialog = ref(false); const tokenDialog = ref(false); const taskDialog = ref(false); const detailVisible = ref(false);
+const modelDialog = ref(false); const savingModel = ref(false); const editingAgent = ref<CodexAgent>();
+const modelForm = reactive({ model: '', reasoningEffort: 'medium' });
+const modelOptions = [
+  { label: '5.6 Sol', value: 'gpt-5.6-sol' }, { label: '5.6 Terra', value: 'gpt-5.6-terra' },
+  { label: '5.6 Luna', value: 'gpt-5.6-luna' }, { label: '5.5', value: 'gpt-5.5' },
+  { label: '5.4', value: 'gpt-5.4' }, { label: '5.4 Mini', value: 'gpt-5.4-mini' },
+  { label: '5.2', value: 'gpt-5.2' },
+];
+const effortOptions = [
+  { label: '轻度', value: 'minimal' }, { label: '低', value: 'low' }, { label: '中', value: 'medium' },
+  { label: '高', value: 'high' }, { label: '极高', value: 'xhigh' },
+];
 const agentName = ref('本机 Codex'); const createdToken = ref(''); const selectedTask = ref<CodexTask>();
 const form = reactive({ agentId: undefined as number | undefined, projectKey: 'personal-assistant', permissionMode: 'READ_ONLY', prompt: '' });
 const activeAgents = computed(() => agents.value.filter(agent => !agent.revokedAt));
 const formatTime = (value?: string) => value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-';
 const agentStatus = (value: string) => ({ ONLINE: '在线', OFFLINE: '离线', REVOKED: '已撤销' }[value] || value);
 const agentTag = (value: string) => value === 'ONLINE' ? 'success' : value === 'REVOKED' ? 'info' : 'warning';
+const effortLabel = (value?: string) => effortOptions.find(item => item.value === (value || 'medium'))?.label || value || '中';
 const taskStatus = (value: string) => ({ PENDING: '等待电脑', RUNNING: '执行中', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消' }[value] || value);
 const taskTag = (value: string) => ({ PENDING: 'warning', RUNNING: 'primary', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'info' }[value] || 'info');
 async function load() { loading.value = true; try { [agents.value, tasks.value] = await Promise.all([(await listCodexAgents()).data, (await listCodexTasks()).data]); if (!form.agentId && activeAgents.value.length) form.agentId = activeAgents.value[0].id; } finally { loading.value = false; } }
 async function createAgent() { if (!agentName.value.trim()) return ElMessage.warning('请输入电脑名称'); const result = await createCodexAgent({ name: agentName.value.trim() }); createdToken.value = result.data.token; agentDialog.value = false; tokenDialog.value = true; await load(); }
 async function copyToken() { await navigator.clipboard.writeText(createdToken.value); ElMessage.success('令牌已复制'); }
 async function revoke(id: number) { await ElMessageBox.confirm('撤销后该电脑将不能继续领取或回传任务。', '确认撤销', { type: 'warning' }); await revokeCodexAgent(id); await load(); }
+function openModel(agent: CodexAgent) { editingAgent.value = agent; modelForm.model = agent.model || ''; modelForm.reasoningEffort = agent.reasoningEffort || 'medium'; modelDialog.value = true; }
+async function saveModel() { if (!editingAgent.value) return; savingModel.value = true; try { await updateCodexAgentModel(editingAgent.value.id, { model: modelForm.model.trim() || undefined, reasoningEffort: modelForm.reasoningEffort }); ElMessage.success('模型配置已保存，将用于后续新任务'); modelDialog.value = false; await load(); } finally { savingModel.value = false; } }
 async function createTask() { if (!form.agentId || !form.projectKey.trim() || !form.prompt.trim()) return ElMessage.warning('请完整填写任务'); if (form.permissionMode === 'WORKSPACE_WRITE') await ElMessageBox.confirm('该任务允许 Codex 修改本地项目文件，确认提交？', '写入权限确认', { type: 'warning' }); await createCodexTask({ agentId: form.agentId, projectKey: form.projectKey.trim(), permissionMode: form.permissionMode, prompt: form.prompt.trim() }); form.prompt = ''; taskDialog.value = false; ElMessage.success('任务已提交'); await load(); }
 async function cancel(id: number) { await cancelCodexTask(id); ElMessage.success('任务已取消'); await load(); }
 async function openTask(task: CodexTask) { selectedTask.value = task; events.value = (await listCodexTaskEvents(task.id)).data; detailVisible.value = true; }

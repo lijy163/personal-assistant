@@ -12,7 +12,7 @@
 
 1. 在个人辅助系统进入“系统管理 → 远程 Codex”，添加电脑并立即复制一次性 Agent 令牌。
 2. 复制 `config.example.json` 为 `config.json`，修改服务器地址和本地项目白名单。
-   Windows 上建议将 `codexCommand` 配置为 Codex CLI 的绝对路径，避免与桌面客户端的同名程序冲突。
+   Windows 上建议按示例使用 `node.exe` 加 Codex CLI 的固定 `codexArgs` 入口，避免与桌面客户端的同名程序冲突，也避免提示词经过 Shell。
 3. 项目标识是 `projects` 对象的键。网页任务只能填写这里存在的标识，不能下发任意本地路径。
 4. 在当前用户环境中设置令牌并启动：
 

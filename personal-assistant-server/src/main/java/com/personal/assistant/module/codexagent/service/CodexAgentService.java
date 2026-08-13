@@ -23,6 +23,7 @@ import java.util.List;
 @Service
 public class CodexAgentService {
     public static final String TOKEN_PREFIX = "pa_agent_";
+    private static final List<String> REASONING_EFFORTS = List.of("minimal", "low", "medium", "high", "xhigh");
     private final CodexAgentMapper agents;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -53,9 +54,29 @@ public class CodexAgentService {
         return agents.selectList(new LambdaQueryWrapper<CodexAgent>()
                         .eq(CodexAgent::getUserId, userId)
                         .orderByDesc(CodexAgent::getCreatedAt))
-                .stream().map(agent -> new AgentSummary(agent.getId(), agent.getName(), agent.getTokenPrefix(),
+                .stream().map(agent -> new AgentSummary(agent.getId(), agent.getName(), agent.getModel(),
+                        agent.getReasoningEffort(), agent.getTokenPrefix(),
                         effectiveStatus(agent, onlineCutoff), agent.getLastSeenAt(), agent.getRevokedAt(), agent.getCreatedAt()))
                 .toList();
+    }
+
+    @Transactional
+    public void updateModel(Long userId, Long id, String model, String reasoningEffort) {
+        CodexAgent agent = requireOwned(userId, id);
+        String normalized = model == null ? null : model.trim();
+        if (normalized != null && normalized.isEmpty()) normalized = null;
+        if (normalized != null && !normalized.matches("[A-Za-z0-9._:/-]{1,100}")) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "模型名称格式无效");
+        }
+        String normalizedEffort = reasoningEffort == null || reasoningEffort.isBlank()
+                ? "medium" : reasoningEffort.trim().toLowerCase();
+        if (!REASONING_EFFORTS.contains(normalizedEffort)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "推理强度无效");
+        }
+        agent.setModel(normalized);
+        agent.setReasoningEffort(normalizedEffort);
+        agent.setUpdatedAt(LocalDateTime.now());
+        agents.updateById(agent);
     }
 
     @Transactional
@@ -87,6 +108,14 @@ public class CodexAgentService {
         CodexAgent agent = agents.selectById(id);
         if (agent == null || !userId.equals(agent.getUserId())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "Codex Agent 不存在");
+        }
+        return agent;
+    }
+
+    public CodexAgent requireActive(Long id) {
+        CodexAgent agent = agents.selectById(id);
+        if (agent == null || agent.getRevokedAt() != null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "Codex Agent 不存在或已撤销");
         }
         return agent;
     }

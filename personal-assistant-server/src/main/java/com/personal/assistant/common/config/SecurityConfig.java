@@ -27,6 +27,8 @@ public class SecurityConfig {
             "/api/system/health",
             "/api/system/version",
             "/api/public/blog/**",
+            "/api/public/wecom/callback",
+            "/api/public/codex/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**"

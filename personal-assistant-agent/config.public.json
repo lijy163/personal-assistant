@@ -1,0 +1,12 @@
+{
+  "serverUrl": "http://backend:8080",
+  "pollIntervalSeconds": 5,
+  "taskTimeoutMinutes": 15,
+  "codexCommand": "codex",
+  "projects": {
+    "public-qa": {
+      "path": "/app/public-qa",
+      "allowWrite": false
+    }
+  }
+}

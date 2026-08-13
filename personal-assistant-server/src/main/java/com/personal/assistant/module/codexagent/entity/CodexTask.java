@@ -16,8 +16,13 @@ public class CodexTask {
     private Long agentId;
     private String projectKey;
     private String prompt;
+    private String model;
+    private String reasoningEffort;
     private String permissionMode;
     private String status;
+    private String source;
+    private String externalUserId;
+    private String externalMessageId;
     private String leaseId;
     private LocalDateTime leaseExpiresAt;
     private String threadId;

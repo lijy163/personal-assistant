@@ -14,6 +14,8 @@ public class CodexAgent {
     private Long id;
     private Long userId;
     private String name;
+    private String model;
+    private String reasoningEffort;
     private String tokenPrefix;
     private String tokenHash;
     private String status;

@@ -72,6 +72,21 @@ services:
       STORAGE_WARNING_PERCENT: ${STORAGE_WARNING_PERCENT:-85}
       JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx1024m}
       TZ: Asia/Shanghai
+      WECOM_ENABLED: ${WECOM_ENABLED:-false}
+      WECOM_CORP_ID: ${WECOM_CORP_ID:-}
+      WECOM_AGENT_ID: ${WECOM_AGENT_ID:-}
+      WECOM_SECRET: ${WECOM_SECRET:-}
+      WECOM_TOKEN: ${WECOM_TOKEN:-}
+      WECOM_ENCODING_AES_KEY: ${WECOM_ENCODING_AES_KEY:-}
+      WECOM_DEFAULT_CODEX_AGENT_ID: ${WECOM_DEFAULT_CODEX_AGENT_ID:-}
+      WECOM_DEFAULT_PROJECT_KEY: ${WECOM_DEFAULT_PROJECT_KEY:-personal-assistant}
+      WECOM_ALLOWED_USERS: ${WECOM_ALLOWED_USERS:-}
+      PUBLIC_CODEX_ENABLED: ${PUBLIC_CODEX_ENABLED:-false}
+      PUBLIC_CODEX_AGENT_ID: ${PUBLIC_CODEX_AGENT_ID:-}
+      PUBLIC_CODEX_PROJECT_KEY: ${PUBLIC_CODEX_PROJECT_KEY:-public-qa}
+      PUBLIC_CODEX_MINIMUM_INTERVAL_SECONDS: ${PUBLIC_CODEX_MINIMUM_INTERVAL_SECONDS:-10}
+      PUBLIC_CODEX_MAX_ACTIVE_TASKS_PER_SESSION: ${PUBLIC_CODEX_MAX_ACTIVE_TASKS_PER_SESSION:-2}
+      PUBLIC_CODEX_MAX_ACTIVE_TASKS: ${PUBLIC_CODEX_MAX_ACTIVE_TASKS:-20}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
@@ -87,6 +102,41 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
+
+  codex-agent:
+    build:
+      context: ../personal-assistant-agent
+      dockerfile: Dockerfile
+    container_name: personal-assistant-codex-agent
+    restart: unless-stopped
+    environment:
+      PA_AGENT_TOKEN: ${PA_AGENT_TOKEN:-}
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://www.xshoow.cloud/v1}
+      TZ: Asia/Shanghai
+    volumes:
+      - ../:/workspace/personal-assistant:ro
+      - ../codex-worktrees:/workspace/codex-worktrees
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  codex-public-agent:
+    profiles: ["public-codex"]
+    build:
+      context: ../personal-assistant-agent
+      dockerfile: Dockerfile
+    container_name: personal-assistant-codex-public-agent
+    restart: unless-stopped
+    environment:
+      PA_AGENT_TOKEN: ${PA_PUBLIC_AGENT_TOKEN:-}
+      PA_AGENT_CONFIG: /app/config.public.json
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://www.xshoow.cloud/v1}
+      TZ: Asia/Shanghai
+    depends_on:
+      backend:
+        condition: service_healthy
 
 
   rain7-blog:

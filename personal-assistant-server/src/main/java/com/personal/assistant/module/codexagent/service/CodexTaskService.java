@@ -12,6 +12,7 @@ import com.personal.assistant.module.codexagent.mapper.CodexTaskEventMapper;
 import com.personal.assistant.module.codexagent.mapper.CodexTaskMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.personal.assistant.module.wecom.WeComMessageService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,18 +27,20 @@ public class CodexTaskService {
     private final CodexTaskEventMapper events;
     private final CodexAgentMapper agents;
     private final CodexAgentService agentService;
+    private final WeComMessageService weComMessages;
 
     public CodexTaskService(CodexTaskMapper tasks, CodexTaskEventMapper events, CodexAgentMapper agents,
-                            CodexAgentService agentService) {
+                            CodexAgentService agentService, WeComMessageService weComMessages) {
         this.tasks = tasks;
         this.events = events;
         this.agents = agents;
         this.agentService = agentService;
+        this.weComMessages = weComMessages;
     }
 
     @Transactional
     public Long create(Long userId, CreateTaskRequest request) {
-        agentService.requireOwned(userId, request.agentId());
+        CodexAgent taskAgent = agentService.requireOwned(userId, request.agentId());
         String permissionMode = request.permissionMode().trim().toUpperCase();
         if (!PERMISSION_MODES.contains(permissionMode)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "权限模式只支持 READ_ONLY 或 WORKSPACE_WRITE");
@@ -48,8 +51,11 @@ public class CodexTaskService {
         task.setAgentId(request.agentId());
         task.setProjectKey(request.projectKey().trim());
         task.setPrompt(request.prompt().trim());
+        task.setModel(taskAgent.getModel());
+        task.setReasoningEffort(taskAgent.getReasoningEffort());
         task.setPermissionMode(permissionMode);
         task.setStatus("PENDING");
+        task.setSource("WEB");
         task.setRequestedAt(now);
         task.setUpdatedAt(now);
         tasks.insert(task);
@@ -99,7 +105,7 @@ public class CodexTaskService {
         task.setUpdatedAt(now);
         tasks.updateById(task);
         return new ClaimedTask(task.getId(), leaseId, task.getLeaseExpiresAt(), task.getProjectKey(),
-                task.getPrompt(), task.getPermissionMode());
+                task.getPrompt(), task.getPermissionMode(), task.getModel(), task.getReasoningEffort());
     }
 
     @Transactional
@@ -130,6 +136,8 @@ public class CodexTaskService {
         task.setThreadId(request.threadId());
         task.setFinalResponse(request.finalResponse());
         finish(task);
+        notifyWeCom(task, "Codex 任务 #" + task.getId() + " 已完成\n项目：" + task.getProjectKey()
+                + "\n\n" + request.finalResponse());
     }
 
     @Transactional
@@ -139,6 +147,8 @@ public class CodexTaskService {
         task.setThreadId(request.threadId());
         task.setErrorMessage(request.errorMessage());
         finish(task);
+        notifyWeCom(task, "Codex 任务 #" + task.getId() + " 执行失败\n项目：" + task.getProjectKey()
+                + "\n\n" + request.errorMessage());
     }
 
     private void finish(CodexTask task) {
@@ -169,8 +179,18 @@ public class CodexTaskService {
     private TaskSummary summary(CodexTask task) {
         CodexAgent agent = agents.selectById(task.getAgentId());
         return new TaskSummary(task.getId(), task.getAgentId(), agent == null ? "-" : agent.getName(),
-                task.getProjectKey(), task.getPrompt(), task.getPermissionMode(), task.getStatus(), task.getThreadId(),
+                task.getProjectKey(), task.getPrompt(), task.getModel(), task.getReasoningEffort(), task.getPermissionMode(), task.getStatus(), task.getThreadId(),
                 task.getFinalResponse(), task.getErrorMessage(), task.getRequestedAt(), task.getStartedAt(),
                 task.getFinishedAt(), task.getUpdatedAt());
+    }
+
+    private void notifyWeCom(CodexTask task, String content) {
+        if ("WECOM".equals(task.getSource()) && task.getExternalUserId() != null) {
+            try {
+                weComMessages.sendText(task.getExternalUserId(), content);
+            } catch (Exception ignored) {
+                // 任务结果已经持久化，通知失败不应回滚任务状态。
+            }
+        }
     }
 }

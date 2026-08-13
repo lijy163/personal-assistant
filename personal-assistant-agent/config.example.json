@@ -2,7 +2,8 @@
   "serverUrl": "http://localhost:8080",
   "pollIntervalSeconds": 5,
   "taskTimeoutMinutes": 60,
-  "codexCommand": "C:\\nvm4w\\nodejs\\codex.cmd",
+  "codexCommand": "C:\\nvm4w\\nodejs\\node.exe",
+  "codexArgs": ["C:\\nvm4w\\nodejs\\node_modules\\@openai\\codex\\bin\\codex.js"],
   "projects": {
     "personal-assistant": {
       "path": "C:\\Users\\Li\\Desktop\\project\\kiro\\personal-assistant-workspace\\personal-assistant",
