@@ -14,10 +14,18 @@
 2. 复制 `config.example.json` 为 `config.json`，修改服务器地址和本地项目白名单。
    Windows 上建议按示例使用 `node.exe` 加 Codex CLI 的固定 `codexArgs` 入口，避免与桌面客户端的同名程序冲突，也避免提示词经过 Shell。
 3. 项目标识是 `projects` 对象的键。网页任务只能填写这里存在的标识，不能下发任意本地路径。
-4. 在当前用户环境中设置令牌并启动：
+4. 运行交互式配置命令，将令牌和 API Key 保存到仅供本机使用的 `runtime.local.json`：
+
+```powershell
+C:\nvm4w\nodejs\npm.cmd run setup
+C:\nvm4w\nodejs\npm.cmd start
+```
+
+`runtime.local.json` 已加入 Git 忽略，不会提交到仓库。也可以继续使用环境变量：
 
 ```powershell
 $env:PA_AGENT_TOKEN = "pa_agent_创建时显示的令牌"
+$env:CODEX_API_KEY = "XSHOOW API Key"
 npm start
 ```
 
@@ -28,7 +36,7 @@ npm start
 - `READ_ONLY` 使用 Codex `read-only` 沙箱。
 - `WORKSPACE_WRITE` 使用 `workspace-write` 沙箱，并要求项目配置 `allowWrite: true`。
 - Agent 不接受服务器下发的本地路径、Shell 命令或 Codex 启动参数。
-- 第一版只支持取消尚未领取的任务；运行中任务不能远程终止。
+- 等待中的任务可以取消；运行中的任务可以在管理页面远程终止。
 
 ## 开机启动
 

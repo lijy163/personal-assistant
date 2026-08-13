@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "setup": "node src/setup.js",
     "start": "node src/index.js",
-    "check": "node --check src/index.js && node --check src/api-client.js && node --check src/codex-runner.js"
+    "check": "node --check src/index.js && node --check src/api-client.js && node --check src/codex-runner.js && node --check src/setup.js"
   }
 }

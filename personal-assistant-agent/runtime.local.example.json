@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "token": "pa_agent_请替换为公司电脑令牌",
+  "apiKey": "请替换为XSHOOW_API_Key",
+  "baseUrl": "https://www.xshoow.cloud/v1"
+}

@@ -8,7 +8,9 @@ const config = JSON.parse(await readFile(configPath, 'utf8'));
 if (!config.serverUrl) throw new Error('config.json 缺少 serverUrl');
 
 const pollIntervalMs = (config.pollIntervalSeconds ?? 5) * 1000;
-const runtimeConfigPath = process.env.PA_RUNTIME_CONFIG;
+const runtimeConfigPath = process.env.PA_RUNTIME_CONFIG
+  ? path.resolve(process.env.PA_RUNTIME_CONFIG)
+  : path.resolve('./runtime.local.json');
 let stopping = false;
 let waitingLogged = false;
 
@@ -90,18 +92,15 @@ async function confirmCancelled(api, task) {
 }
 
 async function loadRuntimeConfig() {
-  if (!runtimeConfigPath) {
-    const token = process.env.PA_AGENT_TOKEN;
-    const apiKey = process.env.CODEX_API_KEY;
-    if (!token?.startsWith('pa_agent_') || !apiKey) return null;
-    return { enabled: true, token, apiKey, baseUrl: process.env.OPENAI_BASE_URL || 'https://www.xshoow.cloud/v1' };
-  }
   try {
     const runtime = JSON.parse(await readFile(runtimeConfigPath, 'utf8'));
     if (!runtime.enabled || !runtime.token?.startsWith('pa_agent_') || !runtime.apiKey) return null;
     return runtime;
   } catch {
-    return null;
+    const token = process.env.PA_AGENT_TOKEN;
+    const apiKey = process.env.CODEX_API_KEY;
+    if (!token?.startsWith('pa_agent_') || !apiKey) return null;
+    return { enabled: true, token, apiKey, baseUrl: process.env.OPENAI_BASE_URL || 'https://www.xshoow.cloud/v1' };
   }
 }
 
