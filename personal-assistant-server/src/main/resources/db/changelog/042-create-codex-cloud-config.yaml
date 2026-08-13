@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 042-create-codex-cloud-config
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: codex_cloud_config
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false, unique: true } }
+              - column: { name: management_agent_id, type: bigint }
+              - column: { name: management_token_encrypted, type: text }
+              - column: { name: public_agent_id, type: bigint }
+              - column: { name: public_token_encrypted, type: text }
+              - column: { name: api_key_encrypted, type: text }
+              - column: { name: base_url, type: varchar(500), defaultValue: https://www.xshoow.cloud/v1, constraints: { nullable: false } }
+              - column: { name: public_enabled, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }

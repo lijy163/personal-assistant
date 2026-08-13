@@ -1,6 +1,22 @@
 <template>
   <div class="page">
     <el-card>
+      <template #header><div class="header"><span>云端运行配置</span><el-tag :type="cloudReady ? 'success' : 'warning'">{{ cloudReady ? '已配置' : '等待配置' }}</el-tag></div></template>
+      <el-alert title="密钥加密保存且不会回显；输入框留空表示保留现有密钥。保存后 Agent 会自动加载，无需重启容器。" type="info" :closable="false"/>
+      <el-form :model="cloudForm" label-width="130px" class="cloud-form">
+        <el-form-item label="API 服务地址"><el-input v-model="cloudForm.baseUrl" placeholder="https://www.xshoow.cloud/v1"/></el-form-item>
+        <el-form-item label="XSHOOW API Key"><el-input v-model="cloudForm.apiKey" type="password" show-password :placeholder="cloudConfig?.apiKeyConfigured ? '已配置，留空表示不修改' : '请输入 API Key'" autocomplete="new-password"/></el-form-item>
+        <el-divider content-position="left">云服务器任务</el-divider>
+        <el-form-item label="云服务器 Agent"><el-select v-model="cloudForm.managementAgentId" clearable style="width:100%"><el-option v-for="agent in activeAgents" :key="agent.id" :label="agent.name" :value="agent.id"/></el-select></el-form-item>
+        <el-form-item label="Agent 令牌"><el-input v-model="cloudForm.managementToken" type="password" show-password :placeholder="cloudConfig?.managementTokenConfigured ? '已配置，留空表示不修改' : '粘贴所选 Agent 的 pa_agent_ 令牌'" autocomplete="new-password"/></el-form-item>
+        <el-divider content-position="left">免登录公开问答</el-divider>
+        <el-form-item label="启用公开问答"><el-switch v-model="cloudForm.publicEnabled"/></el-form-item>
+        <el-form-item label="公开问答 Agent"><el-select v-model="cloudForm.publicAgentId" clearable :disabled="!cloudForm.publicEnabled" style="width:100%"><el-option v-for="agent in activeAgents" :key="agent.id" :label="agent.name" :value="agent.id"/></el-select></el-form-item>
+        <el-form-item label="公开 Agent 令牌"><el-input v-model="cloudForm.publicToken" type="password" show-password :disabled="!cloudForm.publicEnabled" :placeholder="cloudConfig?.publicTokenConfigured ? '已配置，留空表示不修改' : '粘贴公开 Agent 的 pa_agent_ 令牌'" autocomplete="new-password"/></el-form-item>
+        <el-form-item><el-button type="primary" :loading="savingCloud" @click="saveCloud">保存云端配置</el-button><span v-if="cloudForm.publicEnabled" class="public-link">公开地址：<a href="/ask" target="_blank">/ask</a></span></el-form-item>
+      </el-form>
+    </el-card>
+    <el-card>
       <template #header><div class="header"><span>电脑端 Agent</span><el-button type="primary" @click="agentDialog = true">添加电脑</el-button></div></template>
       <el-alert title="电脑端 Agent 主动领取任务；令牌明文只在创建后显示一次。" type="info" :closable="false"/>
       <el-table :data="agents" class="table">
@@ -85,9 +101,11 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
-import { cancelCodexTask, createCodexAgent, createCodexTask, listCodexAgents, listCodexTaskEvents, listCodexTasks, revokeCodexAgent, updateCodexAgentModel, type CodexAgent, type CodexTask, type CodexTaskEvent } from '@/api/codexAgent';
+import { cancelCodexTask, createCodexAgent, createCodexTask, getCodexCloudConfig, listCodexAgents, listCodexTaskEvents, listCodexTasks, revokeCodexAgent, saveCodexCloudConfig, updateCodexAgentModel, type CodexAgent, type CodexCloudConfig, type CodexTask, type CodexTaskEvent } from '@/api/codexAgent';
 
 const agents = ref<CodexAgent[]>([]); const tasks = ref<CodexTask[]>([]); const events = ref<CodexTaskEvent[]>([]); const loading = ref(false);
+const cloudConfig = ref<CodexCloudConfig>(); const savingCloud = ref(false);
+const cloudForm = reactive({ managementAgentId: undefined as number | undefined, managementToken: '', publicAgentId: undefined as number | undefined, publicToken: '', apiKey: '', baseUrl: 'https://www.xshoow.cloud/v1', publicEnabled: false });
 const agentDialog = ref(false); const tokenDialog = ref(false); const taskDialog = ref(false); const detailVisible = ref(false);
 const modelDialog = ref(false); const savingModel = ref(false); const editingAgent = ref<CodexAgent>();
 const modelForm = reactive({ model: '', reasoningEffort: 'medium' });
@@ -104,13 +122,15 @@ const effortOptions = [
 const agentName = ref('本机 Codex'); const createdToken = ref(''); const selectedTask = ref<CodexTask>();
 const form = reactive({ agentId: undefined as number | undefined, projectKey: 'personal-assistant', permissionMode: 'READ_ONLY', prompt: '' });
 const activeAgents = computed(() => agents.value.filter(agent => !agent.revokedAt));
+const cloudReady = computed(() => Boolean(cloudConfig.value?.managementAgentId && cloudConfig.value?.managementTokenConfigured && cloudConfig.value?.apiKeyConfigured));
 const formatTime = (value?: string) => value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-';
 const agentStatus = (value: string) => ({ ONLINE: '在线', OFFLINE: '离线', REVOKED: '已撤销' }[value] || value);
 const agentTag = (value: string) => value === 'ONLINE' ? 'success' : value === 'REVOKED' ? 'info' : 'warning';
 const effortLabel = (value?: string) => effortOptions.find(item => item.value === (value || 'medium'))?.label || value || '中';
 const taskStatus = (value: string) => ({ PENDING: '等待电脑', RUNNING: '执行中', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消' }[value] || value);
 const taskTag = (value: string) => ({ PENDING: 'warning', RUNNING: 'primary', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'info' }[value] || 'info');
-async function load() { loading.value = true; try { [agents.value, tasks.value] = await Promise.all([(await listCodexAgents()).data, (await listCodexTasks()).data]); if (!form.agentId && activeAgents.value.length) form.agentId = activeAgents.value[0].id; } finally { loading.value = false; } }
+async function load() { loading.value = true; try { const [agentResult, taskResult, cloudResult] = await Promise.all([listCodexAgents(), listCodexTasks(), getCodexCloudConfig()]); agents.value = agentResult.data; tasks.value = taskResult.data; cloudConfig.value = cloudResult.data; Object.assign(cloudForm, { managementAgentId: cloudResult.data.managementAgentId, managementToken: '', publicAgentId: cloudResult.data.publicAgentId, publicToken: '', apiKey: '', baseUrl: cloudResult.data.baseUrl || 'https://www.xshoow.cloud/v1', publicEnabled: cloudResult.data.publicEnabled }); if (!form.agentId && activeAgents.value.length) form.agentId = activeAgents.value[0].id; } finally { loading.value = false; } }
+async function saveCloud() { savingCloud.value = true; try { const result = await saveCodexCloudConfig({ managementAgentId: cloudForm.managementAgentId, managementToken: cloudForm.managementToken.trim() || undefined, publicAgentId: cloudForm.publicAgentId, publicToken: cloudForm.publicToken.trim() || undefined, apiKey: cloudForm.apiKey.trim() || undefined, baseUrl: cloudForm.baseUrl.trim(), publicEnabled: cloudForm.publicEnabled }); cloudConfig.value = result.data; cloudForm.managementToken = ''; cloudForm.publicToken = ''; cloudForm.apiKey = ''; ElMessage.success('云端配置已保存，Agent 将在几秒内自动上线'); await load(); } finally { savingCloud.value = false; } }
 async function createAgent() { if (!agentName.value.trim()) return ElMessage.warning('请输入电脑名称'); const result = await createCodexAgent({ name: agentName.value.trim() }); createdToken.value = result.data.token; agentDialog.value = false; tokenDialog.value = true; await load(); }
 async function copyToken() { await navigator.clipboard.writeText(createdToken.value); ElMessage.success('令牌已复制'); }
 async function revoke(id: number) { await ElMessageBox.confirm('撤销后该电脑将不能继续领取或回传任务。', '确认撤销', { type: 'warning' }); await revokeCodexAgent(id); await load(); }
@@ -124,5 +144,5 @@ onMounted(load);
 </script>
 
 <style scoped>
-.page{display:grid;gap:16px}.header{display:flex;align-items:center;justify-content:space-between;font-weight:600}.table{margin-top:16px}.token{margin-top:16px}.pre,pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:14px;background:#f6f8fa;border-radius:6px}.error{color:#b42318}.page h3{margin-top:22px}
+.page{display:grid;gap:16px}.header{display:flex;align-items:center;justify-content:space-between;font-weight:600}.cloud-form{max-width:760px;margin-top:20px}.public-link{margin-left:18px;color:#64748b}.public-link a{color:#409eff}.table{margin-top:16px}.token{margin-top:16px}.pre,pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:14px;background:#f6f8fa;border-radius:6px}.error{color:#b42318}.page h3{margin-top:22px}
 </style>

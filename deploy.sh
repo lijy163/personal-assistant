@@ -33,23 +33,16 @@ env_value() {
 
 export CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-$(env_value CODEX_DEBIAN_MIRROR)}"
 export CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-$(env_value CODEX_NPM_REGISTRY)}"
-CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}"
+CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-http://mirrors.cloud.tencent.com}"
 CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}"
 export CODEX_DEBIAN_MIRROR CODEX_NPM_REGISTRY
-
-PUBLIC_CODEX_ENABLED="$(env_value PUBLIC_CODEX_ENABLED | tr -d '[:space:]')"
-COMPOSE_PROFILE_ARGS=()
-if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
-  COMPOSE_PROFILE_ARGS=(--profile public-codex)
-fi
 
 cd "$PROJECT_DIR"
 
 compose() {
   docker compose --project-directory "$DEPLOY_DIR" \
     --env-file "$ENV_FILE" \
-    -f "$DEPLOY_DIR/docker-compose.yml" \
-    "${COMPOSE_PROFILE_ARGS[@]}" "$@"
+    -f "$DEPLOY_DIR/docker-compose.yml" "$@"
 }
 
 print_diagnostics() {
@@ -67,9 +60,7 @@ print_diagnostics() {
 
   log "Codex Agent 日志（最近 100 行）"
   compose logs --tail=100 codex-agent || true
-  if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
-    compose logs --tail=100 codex-public-agent || true
-  fi
+  compose logs --tail=100 codex-public-agent || true
 }
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
@@ -113,9 +104,6 @@ else
 fi
 
 log "校验 Docker Compose 配置"
-if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
-  log "已启用 public-codex profile，将启动公开问答 Agent"
-fi
 compose config --quiet
 
 log "构建服务镜像（BuildKit=${DOCKER_BUILDKIT}）"

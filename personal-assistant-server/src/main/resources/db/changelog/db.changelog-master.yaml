@@ -40,3 +40,4 @@ databaseChangeLog:
   - include: { file: db/changelog/039-create-codex-agent-module.yaml }
   - include: { file: db/changelog/040-extend-codex-task-wecom.yaml }
   - include: { file: db/changelog/041-add-codex-agent-model.yaml }
+  - include: { file: db/changelog/042-create-codex-cloud-config.yaml }

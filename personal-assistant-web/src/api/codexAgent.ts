@@ -21,6 +21,11 @@ export interface CodexTaskEvent {
   id: number; eventType: string; content: string; createdAt: string;
 }
 
+export interface CodexCloudConfig {
+  managementAgentId?: number; publicAgentId?: number; baseUrl: string; publicEnabled: boolean;
+  managementTokenConfigured: boolean; publicTokenConfigured: boolean; apiKeyConfigured: boolean;
+}
+
 export const listCodexAgents = () => http.get<unknown, { data: CodexAgent[] }>('/codex-agents');
 export const createCodexAgent = (data: { name: string }) =>
   http.post<unknown, { data: CreatedCodexAgent }>('/codex-agents', data);
@@ -33,3 +38,9 @@ export const createCodexTask = (data: { agentId: number; projectKey: string; pro
 export const cancelCodexTask = (id: number) => http.post(`/codex-agents/tasks/${id}/cancel`);
 export const listCodexTaskEvents = (id: number) =>
   http.get<unknown, { data: CodexTaskEvent[] }>(`/codex-agents/tasks/${id}/events`);
+export const getCodexCloudConfig = () =>
+  http.get<unknown, { data: CodexCloudConfig }>('/codex-agents/cloud-config');
+export const saveCodexCloudConfig = (data: {
+  managementAgentId?: number; managementToken?: string; publicAgentId?: number; publicToken?: string;
+  apiKey?: string; baseUrl: string; publicEnabled: boolean;
+}) => http.put<unknown, { data: CodexCloudConfig }>('/codex-agents/cloud-config', data);

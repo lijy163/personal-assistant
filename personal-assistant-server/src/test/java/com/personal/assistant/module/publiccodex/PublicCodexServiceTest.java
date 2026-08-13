@@ -5,6 +5,7 @@ import com.personal.assistant.module.codexagent.entity.CodexAgent;
 import com.personal.assistant.module.codexagent.entity.CodexTask;
 import com.personal.assistant.module.codexagent.mapper.CodexTaskMapper;
 import com.personal.assistant.module.codexagent.service.CodexAgentService;
+import com.personal.assistant.module.codexagent.service.CodexCloudConfigService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -29,7 +30,7 @@ class PublicCodexServiceTest {
         doAnswer(invocation -> { invocation.<CodexTask>getArgument(0).setId(12L); return 1; })
                 .when(tasks).insert(any(CodexTask.class));
 
-        PublicCodexService service = new PublicCodexService(properties, agents, tasks);
+        PublicCodexService service = new PublicCodexService(properties, agents, tasks, cloudConfig(false, null));
         service.ask(SESSION, "什么是单元测试？");
 
         ArgumentCaptor<CodexTask> captor = ArgumentCaptor.forClass(CodexTask.class);
@@ -49,7 +50,8 @@ class PublicCodexServiceTest {
         task.setSource("PUBLIC");
         task.setExternalUserId("not-this-session");
         when(tasks.selectById(12L)).thenReturn(task);
-        PublicCodexService service = new PublicCodexService(properties(), mock(CodexAgentService.class), tasks);
+        PublicCodexService service = new PublicCodexService(properties(), mock(CodexAgentService.class), tasks,
+                cloudConfig(false, null));
 
         assertThrows(BusinessException.class, () -> service.answer(SESSION, 12L));
     }
@@ -60,5 +62,13 @@ class PublicCodexServiceTest {
         properties.setAgentId(8L);
         properties.setProjectKey("public-qa");
         return properties;
+    }
+
+    private CodexCloudConfigService cloudConfig(boolean enabled, Long agentId) {
+        CodexCloudConfigService config = mock(CodexCloudConfigService.class);
+        when(config.publicEnabled()).thenReturn(enabled);
+        when(config.publicAgentId()).thenReturn(agentId);
+        when(config.configured()).thenReturn(false);
+        return config;
     }
 }

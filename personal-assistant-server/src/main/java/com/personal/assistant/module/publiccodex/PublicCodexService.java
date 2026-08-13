@@ -7,6 +7,7 @@ import com.personal.assistant.module.codexagent.entity.CodexAgent;
 import com.personal.assistant.module.codexagent.entity.CodexTask;
 import com.personal.assistant.module.codexagent.mapper.CodexTaskMapper;
 import com.personal.assistant.module.codexagent.service.CodexAgentService;
+import com.personal.assistant.module.codexagent.service.CodexCloudConfigService;
 import com.personal.assistant.module.publiccodex.PublicCodexDtos.AnswerResponse;
 import com.personal.assistant.module.publiccodex.PublicCodexDtos.AskResponse;
 import org.springframework.stereotype.Service;
@@ -26,12 +27,15 @@ public class PublicCodexService {
     private final PublicCodexProperties properties;
     private final CodexAgentService agents;
     private final CodexTaskMapper tasks;
+    private final CodexCloudConfigService cloudConfig;
     private final ConcurrentHashMap<String, LocalDateTime> lastRequests = new ConcurrentHashMap<>();
 
-    public PublicCodexService(PublicCodexProperties properties, CodexAgentService agents, CodexTaskMapper tasks) {
+    public PublicCodexService(PublicCodexProperties properties, CodexAgentService agents, CodexTaskMapper tasks,
+                              CodexCloudConfigService cloudConfig) {
         this.properties = properties;
         this.agents = agents;
         this.tasks = tasks;
+        this.cloudConfig = cloudConfig;
     }
 
     @Transactional
@@ -56,7 +60,7 @@ public class PublicCodexService {
         if (allActiveTasks >= properties.getMaxActiveTasks()) {
             throw new BusinessException(ErrorCode.BUSINESS_ERROR, "当前提问人数较多，请稍后再试");
         }
-        CodexAgent agent = agents.requireActive(properties.getAgentId());
+        CodexAgent agent = agents.requireActive(publicAgentId());
         CodexTask task = new CodexTask();
         task.setUserId(agent.getUserId());
         task.setAgentId(agent.getId());
@@ -87,9 +91,15 @@ public class PublicCodexService {
     }
 
     private void requireEnabled() {
-        if (!properties.isEnabled() || properties.getAgentId() == null) {
+        boolean enabled = cloudConfig.configured() ? cloudConfig.publicEnabled()
+                : properties.isEnabled() && properties.getAgentId() != null;
+        if (!enabled) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "公开问答暂未开放");
         }
+    }
+
+    private Long publicAgentId() {
+        return cloudConfig.configured() ? cloudConfig.publicAgentId() : properties.getAgentId();
     }
 
     private String sessionHash(String token) {

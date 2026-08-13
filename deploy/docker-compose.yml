@@ -93,6 +93,7 @@ services:
       - app-files:/app/files
       - app-logs:/app/logs
       - app-backup:/app/backup
+      - codex-runtime:/app/codex-runtime
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,38 +109,36 @@ services:
       context: ../personal-assistant-agent
       dockerfile: Dockerfile
       args:
-        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}
+        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-http://mirrors.cloud.tencent.com}
         NPM_REGISTRY: ${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: personal-assistant-codex-agent
     restart: unless-stopped
     environment:
-      PA_AGENT_TOKEN: ${PA_AGENT_TOKEN:-}
-      CODEX_API_KEY: ${CODEX_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://www.xshoow.cloud/v1}
+      PA_RUNTIME_CONFIG: /run/codex/management.json
       TZ: Asia/Shanghai
     volumes:
       - ../:/workspace/personal-assistant:ro
       - ../codex-worktrees:/workspace/codex-worktrees
+      - codex-runtime:/run/codex:ro
     depends_on:
       backend:
         condition: service_healthy
 
   codex-public-agent:
-    profiles: ["public-codex"]
     build:
       context: ../personal-assistant-agent
       dockerfile: Dockerfile
       args:
-        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}
+        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-http://mirrors.cloud.tencent.com}
         NPM_REGISTRY: ${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: personal-assistant-codex-public-agent
     restart: unless-stopped
     environment:
-      PA_AGENT_TOKEN: ${PA_PUBLIC_AGENT_TOKEN:-}
       PA_AGENT_CONFIG: /app/config.public.json
-      CODEX_API_KEY: ${CODEX_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://www.xshoow.cloud/v1}
+      PA_RUNTIME_CONFIG: /run/codex/public.json
       TZ: Asia/Shanghai
+    volumes:
+      - codex-runtime:/run/codex:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -174,6 +173,8 @@ volumes:
     name: personal-assistant-logs
   app-backup:
     name: personal-assistant-backup
+  codex-runtime:
+    name: personal-assistant-codex-runtime
   # 启用 Redis 时取消注释
   # redis-data:
   #   name: personal-assistant-redis-data

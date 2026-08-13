@@ -120,6 +120,14 @@ public class CodexAgentService {
         return agent;
     }
 
+    public void requireTokenMatches(Long agentId, String rawToken) {
+        CodexAgent agent = rawToken == null ? null : agents.selectOne(new LambdaQueryWrapper<CodexAgent>()
+                .eq(CodexAgent::getTokenHash, hash(rawToken)));
+        if (agent == null || !agentId.equals(agent.getId()) || agent.getRevokedAt() != null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Agent 令牌与所选电脑不匹配");
+        }
+    }
+
     private String effectiveStatus(CodexAgent agent, LocalDateTime cutoff) {
         if (agent.getRevokedAt() != null) return "REVOKED";
         return agent.getLastSeenAt() != null && agent.getLastSeenAt().isAfter(cutoff) ? "ONLINE" : "OFFLINE";
