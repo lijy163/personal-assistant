@@ -1,8 +1,10 @@
 FROM node:20-bookworm-slim
 
 ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG DEBIAN_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
 
-RUN apt-get update \
+RUN sed -i "s|http://deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g @openai/codex --registry="$NPM_REGISTRY"

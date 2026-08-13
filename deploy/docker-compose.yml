@@ -107,6 +107,9 @@ services:
     build:
       context: ../personal-assistant-agent
       dockerfile: Dockerfile
+      args:
+        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}
+        NPM_REGISTRY: ${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: personal-assistant-codex-agent
     restart: unless-stopped
     environment:
@@ -126,6 +129,9 @@ services:
     build:
       context: ../personal-assistant-agent
       dockerfile: Dockerfile
+      args:
+        DEBIAN_MIRROR: ${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}
+        NPM_REGISTRY: ${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: personal-assistant-codex-public-agent
     restart: unless-stopped
     environment:

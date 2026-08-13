@@ -27,7 +27,17 @@ command -v curl >/dev/null 2>&1 || fail "未安装 curl"
 docker compose version >/dev/null 2>&1 || fail "未安装 Docker Compose 插件"
 [ -f "$ENV_FILE" ] || fail "缺少 $ENV_FILE，请先从 .env.example 创建并配置"
 
-PUBLIC_CODEX_ENABLED="$(grep -E '^PUBLIC_CODEX_ENABLED=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- | tr -d '[:space:]' || true)"
+env_value() {
+  grep -E "^${1}=" "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true
+}
+
+export CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-$(env_value CODEX_DEBIAN_MIRROR)}"
+export CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-$(env_value CODEX_NPM_REGISTRY)}"
+CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn}"
+CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}"
+export CODEX_DEBIAN_MIRROR CODEX_NPM_REGISTRY
+
+PUBLIC_CODEX_ENABLED="$(env_value PUBLIC_CODEX_ENABLED | tr -d '[:space:]')"
 COMPOSE_PROFILE_ARGS=()
 if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
   COMPOSE_PROFILE_ARGS=(--profile public-codex)
@@ -109,6 +119,7 @@ fi
 compose config --quiet
 
 log "构建服务镜像（BuildKit=${DOCKER_BUILDKIT}）"
+log "Codex Agent 构建镜像：Debian=${CODEX_DEBIAN_MIRROR}，npm=${CODEX_NPM_REGISTRY}"
 if ! compose build --progress=plain; then
   print_diagnostics
   fail "Docker 镜像构建失败"
