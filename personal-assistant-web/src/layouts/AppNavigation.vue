@@ -25,7 +25,7 @@
       </el-sub-menu>
       <el-sub-menu index="system">
         <template #title><el-icon><Setting /></el-icon><span>系统管理</span></template>
-        <el-menu-item index="/security-audit">安全审计</el-menu-item><el-menu-item index="/scheduler">调度管理</el-menu-item><el-menu-item index="/devlog-tokens">推送令牌</el-menu-item><el-menu-item index="/system">系统设置</el-menu-item><el-menu-item index="/operations">部署运维</el-menu-item>
+        <el-menu-item index="/security-audit">安全审计</el-menu-item><el-menu-item index="/scheduler">调度管理</el-menu-item><el-menu-item index="/devlog-tokens">推送令牌</el-menu-item><el-menu-item index="/codex-agents">远程 Codex</el-menu-item><el-menu-item index="/system">系统设置</el-menu-item><el-menu-item index="/operations">部署运维</el-menu-item>
       </el-sub-menu>
     </el-menu>
   </div>
@@ -45,7 +45,7 @@ const groupRoutes: Record<string, string[]> = {
   tasks: ['/calendar', '/life', '/work', '/reminders', '/automation', '/life-management'],
   knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage', '/blog'],
   finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/gold', '/reports'],
-  system: ['/security-audit', '/scheduler', '/devlog-tokens', '/system', '/operations'],
+  system: ['/security-audit', '/scheduler', '/devlog-tokens', '/codex-agents', '/system', '/operations'],
 };
 const group = computed(() => {
   const path = route.path;

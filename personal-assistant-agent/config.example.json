@@ -1,0 +1,12 @@
+{
+  "serverUrl": "http://localhost:8080",
+  "pollIntervalSeconds": 5,
+  "taskTimeoutMinutes": 60,
+  "codexCommand": "C:\\nvm4w\\nodejs\\codex.cmd",
+  "projects": {
+    "personal-assistant": {
+      "path": "C:\\Users\\Li\\Desktop\\project\\kiro\\personal-assistant-workspace\\personal-assistant",
+      "allowWrite": true
+    }
+  }
+}

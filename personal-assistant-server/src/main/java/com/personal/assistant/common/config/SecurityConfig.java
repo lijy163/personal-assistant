@@ -1,6 +1,7 @@
 package com.personal.assistant.common.config;
 
 import com.personal.assistant.common.security.JwtAuthenticationFilter;
+import com.personal.assistant.common.security.CodexAgentAuthenticationFilter;
 import com.personal.assistant.common.security.PatAuthenticationFilter;
 import com.personal.assistant.common.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
@@ -33,13 +34,16 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final PatAuthenticationFilter patAuthenticationFilter;
+    private final CodexAgentAuthenticationFilter codexAgentAuthenticationFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           PatAuthenticationFilter patAuthenticationFilter,
+                          CodexAgentAuthenticationFilter codexAgentAuthenticationFilter,
                           RestAuthenticationEntryPoint authenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.patAuthenticationFilter = patAuthenticationFilter;
+        this.codexAgentAuthenticationFilter = codexAgentAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
@@ -54,7 +58,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(patAuthenticationFilter, JwtAuthenticationFilter.class);
+                .addFilterAfter(patAuthenticationFilter, JwtAuthenticationFilter.class)
+                .addFilterAfter(codexAgentAuthenticationFilter, PatAuthenticationFilter.class);
         return http.build();
     }
 

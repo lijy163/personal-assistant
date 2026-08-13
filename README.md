@@ -33,6 +33,7 @@
 ```text
 personal-assistant
 ├── deploy                    # Docker Compose
+├── personal-assistant-agent  # Windows 电脑端 Codex 任务执行器
 ├── personal-assistant-server # Spring Boot 后端
 └── personal-assistant-web    # Vue 3 前端
 ```
@@ -66,6 +67,10 @@ npm run dev
 ```
 
 访问 `http://localhost:5173`。
+
+## 远程 Codex
+
+系统支持由网页创建任务，电脑端 Agent 主动领取并调用本机 Codex。先在“系统管理 → 远程 Codex”创建电脑和一次性令牌，再根据 `personal-assistant-agent/README.md` 配置本地项目白名单并启动 Agent。
 
 ## 构建和测试
 
