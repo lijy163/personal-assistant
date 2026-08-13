@@ -9,6 +9,10 @@
       "allowWrite": true,
       "worktreeRoot": "/workspace/codex-worktrees",
       "gitCommand": "git"
+    },
+    "public-qa": {
+      "path": "/app/public-qa",
+      "allowWrite": false
     }
   }
 }
