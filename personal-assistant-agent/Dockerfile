@@ -1,9 +1,11 @@
 FROM node:20-bookworm-slim
 
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g @openai/codex
+    && npm install -g @openai/codex --registry="$NPM_REGISTRY"
 
 WORKDIR /app
 COPY package.json ./
