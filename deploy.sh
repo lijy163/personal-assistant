@@ -27,12 +27,19 @@ command -v curl >/dev/null 2>&1 || fail "未安装 curl"
 docker compose version >/dev/null 2>&1 || fail "未安装 Docker Compose 插件"
 [ -f "$ENV_FILE" ] || fail "缺少 $ENV_FILE，请先从 .env.example 创建并配置"
 
+PUBLIC_CODEX_ENABLED="$(grep -E '^PUBLIC_CODEX_ENABLED=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- | tr -d '[:space:]' || true)"
+COMPOSE_PROFILE_ARGS=()
+if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
+  COMPOSE_PROFILE_ARGS=(--profile public-codex)
+fi
+
 cd "$PROJECT_DIR"
 
 compose() {
   docker compose --project-directory "$DEPLOY_DIR" \
     --env-file "$ENV_FILE" \
-    -f "$DEPLOY_DIR/docker-compose.yml" "$@"
+    -f "$DEPLOY_DIR/docker-compose.yml" \
+    "${COMPOSE_PROFILE_ARGS[@]}" "$@"
 }
 
 print_diagnostics() {
@@ -47,6 +54,12 @@ print_diagnostics() {
 
   log "Nginx 日志 nginx（最近 80 行）"
   compose logs --tail=80 nginx || true
+
+  log "Codex Agent 日志（最近 100 行）"
+  compose logs --tail=100 codex-agent || true
+  if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
+    compose logs --tail=100 codex-public-agent || true
+  fi
 }
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
@@ -90,6 +103,9 @@ else
 fi
 
 log "校验 Docker Compose 配置"
+if [ "${PUBLIC_CODEX_ENABLED,,}" = "true" ]; then
+  log "已启用 public-codex profile，将启动公开问答 Agent"
+fi
 compose config --quiet
 
 log "构建服务镜像（BuildKit=${DOCKER_BUILDKIT}）"
