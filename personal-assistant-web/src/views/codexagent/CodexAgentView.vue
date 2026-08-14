@@ -17,8 +17,8 @@
       </el-form>
     </el-card>
     <el-card>
-      <template #header><div class="header"><span>电脑端 Agent</span><el-button type="primary" @click="agentDialog = true">添加电脑</el-button></div></template>
-      <el-alert title="电脑端 Agent 主动领取任务；令牌明文只在创建后显示一次。" type="info" :closable="false"/>
+      <template #header><div class="header"><span>执行 Agent</span><el-button type="primary" @click="agentDialog = true">添加电脑</el-button></div></template>
+      <el-alert title="执行 Agent 主动领取任务；令牌明文只在创建后显示一次。" type="info" :closable="false"/>
       <el-table :data="agents" class="table">
         <el-table-column prop="name" label="电脑名称" min-width="160"/>
         <el-table-column prop="tokenPrefix" label="令牌前缀" min-width="180"/>
@@ -44,7 +44,7 @@
       <el-empty v-if="!loading && !tasks.length" description="暂无远程任务"/>
     </el-card>
 
-    <el-dialog v-model="agentDialog" title="添加电脑端 Agent" width="480px">
+    <el-dialog v-model="agentDialog" title="添加执行 Agent" width="480px">
       <el-form label-width="90px"><el-form-item label="电脑名称"><el-input v-model="agentName" placeholder="例如：家里电脑"/></el-form-item></el-form>
       <template #footer><el-button @click="agentDialog = false">取消</el-button><el-button type="primary" @click="createAgent">创建</el-button></template>
     </el-dialog>
