@@ -11,7 +11,8 @@ export async function runCodex(config, task, onEvent, signal) {
   const sandbox = task.permissionMode === 'WORKSPACE_WRITE' ? 'workspace-write' : 'read-only';
   const modelArgs = task.model ? ['--model', task.model] : [];
   const reasoningArgs = task.reasoningEffort ? ['-c', `model_reasoning_effort=${JSON.stringify(task.reasoningEffort)}`] : [];
-  const args = [...(config.codexArgs ?? []), ...modelArgs, ...reasoningArgs, '--ask-for-approval', 'never', 'exec', '--json', '--sandbox', sandbox, task.prompt];
+  const providerArgs = customProviderArgs();
+  const args = [...(config.codexArgs ?? []), ...providerArgs, ...modelArgs, ...reasoningArgs, '--ask-for-approval', 'never', 'exec', '--json', '--sandbox', sandbox, task.prompt];
   const timeoutMs = (config.taskTimeoutMinutes ?? 60) * 60_000;
 
   return new Promise((resolve, reject) => {
@@ -97,6 +98,19 @@ function codexEnvironment() {
   const environment = { ...process.env };
   if (process.env.CODEX_API_KEY) environment.CODEX_API_KEY = process.env.CODEX_API_KEY;
   return environment;
+}
+
+function customProviderArgs() {
+  const baseUrl = process.env.OPENAI_BASE_URL;
+  if (!baseUrl || /^https:\/\/api\.openai\.com(?:\/|$)/i.test(baseUrl)) return [];
+  return [
+    '-c', 'model_provider="pa_proxy"',
+    '-c', 'model_providers.pa_proxy.name="Personal Assistant Proxy"',
+    '-c', `model_providers.pa_proxy.base_url=${JSON.stringify(baseUrl)}`,
+    '-c', 'model_providers.pa_proxy.env_key="CODEX_API_KEY"',
+    '-c', 'model_providers.pa_proxy.wire_api="responses"',
+    '-c', 'model_providers.pa_proxy.supports_websockets=false',
+  ];
 }
 
 async function validateTask(config, task) {
