@@ -26,6 +26,7 @@ export async function runCodex(config, task, onEvent, signal) {
     });
     let threadId;
     let finalResponse = '';
+    let turnCompleted = false;
     let stderr = '';
     let eventChain = Promise.resolve();
     const stdoutLines = readline.createInterface({ input: child.stdout });
@@ -45,6 +46,7 @@ export async function runCodex(config, task, onEvent, signal) {
         return;
       }
       if (event.type === 'thread.started') threadId = event.thread_id;
+      if (event.type === 'turn.completed') turnCompleted = true;
       if (event.type === 'item.completed' && event.item?.type === 'agent_message') {
         finalResponse = event.item.text ?? finalResponse;
       }
@@ -70,7 +72,9 @@ export async function runCodex(config, task, onEvent, signal) {
         reject(new CodexCancelledError());
         return;
       }
-      if (code === 0) resolve({ threadId, finalResponse: appendWorkspace(finalResponse, project) });
+      if (code === 0 || (turnCompleted && finalResponse)) {
+        resolve({ threadId, finalResponse: appendWorkspace(finalResponse, project) });
+      }
       else reject(new CodexRunError(`Codex 执行失败（退出码 ${code}）：${stderr || '没有错误输出'}`, threadId));
     });
   });
@@ -130,7 +134,7 @@ function shouldReport(event) {
 }
 
 function safeEvent(event) {
-  if (!event.item) return { type: event.type, status: event.status, error: event.error?.message };
+  if (!event.item) return { type: event.type, status: event.status, error: event.error?.message || event.message };
   if (event.item.type === 'agent_message') {
     return { type: event.type, item: { type: event.item.type, text: event.item.text } };
   }

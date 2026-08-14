@@ -33,9 +33,13 @@ env_value() {
 
 export CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-$(env_value CODEX_DEBIAN_MIRROR)}"
 export CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-$(env_value CODEX_NPM_REGISTRY)}"
+export HOST_PROXY_URL="${HOST_PROXY_URL:-$(env_value HOST_PROXY_URL)}"
+export CONTAINER_PROXY_URL="${CONTAINER_PROXY_URL:-$(env_value CONTAINER_PROXY_URL)}"
+export SHELLCRASH_NETWORK_NAME="${SHELLCRASH_NETWORK_NAME:-$(env_value SHELLCRASH_NETWORK_NAME)}"
+export NO_PROXY="${NO_PROXY:-$(env_value NO_PROXY)}"
 CODEX_DEBIAN_MIRROR="${CODEX_DEBIAN_MIRROR:-http://mirrors.cloud.tencent.com}"
 CODEX_NPM_REGISTRY="${CODEX_NPM_REGISTRY:-https://registry.npmmirror.com}"
-export CODEX_DEBIAN_MIRROR CODEX_NPM_REGISTRY
+export CODEX_DEBIAN_MIRROR CODEX_NPM_REGISTRY HOST_PROXY_URL CONTAINER_PROXY_URL SHELLCRASH_NETWORK_NAME NO_PROXY
 
 cd "$PROJECT_DIR"
 
@@ -80,9 +84,14 @@ GIT_LOW_SPEED_TIME="${GIT_LOW_SPEED_TIME:-300}"
 
 fetch_origin() {
   local attempt delay
+  local -a git_proxy_args=()
+  if [ -n "$HOST_PROXY_URL" ]; then
+    git_proxy_args=(-c "http.proxy=$HOST_PROXY_URL" -c "https.proxy=$HOST_PROXY_URL")
+    log "Git 拉取使用代理 $HOST_PROXY_URL"
+  fi
   for attempt in $(seq 1 "$GIT_FETCH_RETRIES"); do
     log "拉取 origin/$BRANCH（第 $attempt/$GIT_FETCH_RETRIES 次）"
-    if git -c http.lowSpeedLimit="$GIT_LOW_SPEED_LIMIT" \
+    if git "${git_proxy_args[@]}" -c http.lowSpeedLimit="$GIT_LOW_SPEED_LIMIT" \
       -c http.lowSpeedTime="$GIT_LOW_SPEED_TIME" \
       fetch --prune origin "$BRANCH"; then
       git merge --ff-only FETCH_HEAD

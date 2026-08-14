@@ -115,7 +115,14 @@ services:
     restart: unless-stopped
     environment:
       PA_RUNTIME_CONFIG: /run/codex/management.json
+      HTTP_PROXY: ${CONTAINER_PROXY_URL:-}
+      HTTPS_PROXY: ${CONTAINER_PROXY_URL:-}
+      ALL_PROXY: ${CONTAINER_PROXY_URL:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,backend,postgres,nginx}
       TZ: Asia/Shanghai
+    networks:
+      - default
+      - shellcrash-proxy
     volumes:
       - ../:/workspace/personal-assistant:ro
       - ../codex-worktrees:/workspace/codex-worktrees
@@ -136,7 +143,14 @@ services:
     environment:
       PA_AGENT_CONFIG: /app/config.public.json
       PA_RUNTIME_CONFIG: /run/codex/public.json
+      HTTP_PROXY: ${CONTAINER_PROXY_URL:-}
+      HTTPS_PROXY: ${CONTAINER_PROXY_URL:-}
+      ALL_PROXY: ${CONTAINER_PROXY_URL:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,backend,postgres,nginx}
       TZ: Asia/Shanghai
+    networks:
+      - default
+      - shellcrash-proxy
     volumes:
       - codex-runtime:/run/codex:ro
     depends_on:
@@ -178,3 +192,8 @@ volumes:
   # 启用 Redis 时取消注释
   # redis-data:
   #   name: personal-assistant-redis-data
+
+networks:
+  shellcrash-proxy:
+    external: true
+    name: ${SHELLCRASH_NETWORK_NAME:-shellcrash-proxy}
