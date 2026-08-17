@@ -13,6 +13,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class WorkdayTaskReminderService {
@@ -40,6 +42,34 @@ public class WorkdayTaskReminderService {
                 .collect(java.util.stream.Collectors.groupingBy(TaskItem::getUserId, LinkedHashMap::new,
                         java.util.stream.Collectors.toList()));
         byUser.forEach(this::sendUserSummarySafely);
+    }
+
+    @Scheduled(fixedDelay = 60000)
+    public void sendDueLifeReminders() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+        tasks.selectList(new LambdaQueryWrapper<TaskItem>()
+                        .eq(TaskItem::getItemType, "LIFE")
+                        .eq(TaskItem::getArchived, false)
+                        .eq(TaskItem::getReminderEnabled, true)
+                        .in(TaskItem::getStatus, "DRAFT", "NOT_STARTED", "IN_PROGRESS")
+                        .isNotNull(TaskItem::getReminderAt)
+                        .isNull(TaskItem::getReminderSentAt)
+                        .le(TaskItem::getReminderAt, now)
+                        .orderByAsc(TaskItem::getReminderAt)
+                        .last("limit 200"))
+                .forEach(item -> sendLifeReminderSafely(item, now));
+    }
+
+    private void sendLifeReminderSafely(TaskItem item, LocalDateTime sentAt) {
+        try {
+            NotificationChannel channel = preferredChannel(item.getUserId());
+            if (channel == null) return;
+            notifications.send(item.getUserId(), null, channel.getId(), "生活事项提醒", item.getTitle());
+            item.setReminderSentAt(sentAt);
+            item.setUpdatedAt(sentAt);
+            tasks.updateById(item);
+        } catch (RuntimeException ignored) {
+        }
     }
 
     private void sendUserSummarySafely(Long userId, List<TaskItem> items) {

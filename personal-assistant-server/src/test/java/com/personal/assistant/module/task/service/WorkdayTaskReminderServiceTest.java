@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -48,6 +49,21 @@ class WorkdayTaskReminderServiceTest {
         service.sendWorkdaySummary();
 
         verify(notifications, never()).send(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void sendsDueLifeReminderOnceAndMarksItSent() {
+        TaskItem item = task(7L, "缴水费");
+        item.setId(12L);
+        item.setReminderAt(LocalDateTime.now().minusMinutes(1));
+        when(tasks.selectList(any())).thenReturn(List.of(item));
+        when(channels.selectList(any())).thenReturn(List.of(channel(3L, "SERVER_CHAN")));
+
+        service.sendDueLifeReminders();
+
+        verify(notifications).send(7L, null, 3L, "生活事项提醒", "缴水费");
+        verify(tasks).updateById(item);
+        org.junit.jupiter.api.Assertions.assertNotNull(item.getReminderSentAt());
     }
 
     private TaskItem task(Long userId, String title) {

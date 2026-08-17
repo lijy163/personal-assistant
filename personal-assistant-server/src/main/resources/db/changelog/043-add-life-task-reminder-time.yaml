@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-add-life-task-reminder-time
+      author: codex
+      changes:
+        - addColumn:
+            tableName: task_item
+            columns:
+              - column: { name: reminder_at, type: timestamp }
+              - column: { name: reminder_sent_at, type: timestamp }
+        - createIndex:
+            tableName: task_item
+            indexName: idx_task_life_reminder_due
+            columns:
+              - column: { name: item_type }
+              - column: { name: reminder_enabled }
+              - column: { name: reminder_at }
+              - column: { name: reminder_sent_at }
