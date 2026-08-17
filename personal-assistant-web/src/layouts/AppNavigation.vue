@@ -11,7 +11,7 @@
       </el-sub-menu>
       <el-sub-menu index="tasks">
         <template #title><el-icon><Calendar /></el-icon><span>事务与生活</span></template>
-        <el-menu-item index="/calendar">统一日历</el-menu-item><el-menu-item index="/life">生活事项</el-menu-item><el-menu-item index="/work">工作事项</el-menu-item><el-menu-item index="/reminders">提醒中心</el-menu-item><el-menu-item index="/automation">自动化规则</el-menu-item><el-menu-item index="/life-management">习惯、联系人与资产</el-menu-item>
+        <el-menu-item index="/calendar">统一日历</el-menu-item><el-menu-item index="/project-workbench">项目排期工作台</el-menu-item><el-menu-item index="/life">生活事项</el-menu-item><el-menu-item index="/work">工作事项</el-menu-item><el-menu-item index="/reminders">提醒中心</el-menu-item><el-menu-item index="/automation">自动化规则</el-menu-item><el-menu-item index="/life-management">习惯、联系人与资产</el-menu-item>
       </el-sub-menu>
       <el-sub-menu index="knowledge">
         <template #title><el-icon><Reading /></el-icon><span>知识沉淀</span></template>
@@ -42,7 +42,7 @@ const route = useRoute();
 const router = useRouter();
 const groupRoutes: Record<string, string[]> = {
   home: ['/dashboard', '/inbox', '/inbox/organize'],
-  tasks: ['/calendar', '/life', '/work', '/reminders', '/automation', '/life-management'],
+  tasks: ['/calendar', '/project-workbench', '/life', '/work', '/reminders', '/automation', '/life-management'],
   knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage', '/blog'],
   finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/gold', '/reports'],
   system: ['/security-audit', '/scheduler', '/devlog-tokens', '/codex-agents', '/system', '/operations'],
