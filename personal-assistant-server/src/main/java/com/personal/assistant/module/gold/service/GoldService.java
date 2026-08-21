@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class GoldService {
-    private static final Set<String> GOLD_TYPES = Set.of("LONDON_GOLD", "DOMESTIC_GOLD", "BRAND_JEWELRY", "PLATFORM_GOLD");
+    private static final Set<String> GOLD_TYPES = Set.of("LONDON_GOLD", "DOMESTIC_GOLD", "PLATFORM_GOLD");
     private static final Set<String> AUTH_TYPES = Set.of("NONE", "BEARER", "QUERY_KEY");
 
     private final GoldWatchItemMapper watches;

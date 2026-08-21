@@ -21,10 +21,9 @@
         <el-button :loading="publicLoading" @click="loadPublicQuotes(true)">立即刷新</el-button>
       </div>
       <el-alert v-if="publicError" :title="publicError" type="warning" :closable="false" show-icon />
-      <el-alert v-else-if="publicQuotes && !publicQuotes.jewelryLoaded" :title="publicQuotes.jewelryMessage" type="warning" :closable="false" show-icon class="jewelry-alert" />
       <div class="public-card-grid" v-loading="publicLoading">
         <article v-for="quote in filteredPublicQuotes" :key="quote.code" class="public-card">
-          <small>{{ quote.code.startsWith('JEWELRY_') ? '品牌首饰零售价' : quote.converted ? '实时折算参考' : '国际市场现货' }}</small>
+          <small>{{ quote.converted ? '实时折算参考' : '国际市场现货' }}</small>
           <h3>{{ quote.displayName }}</h3>
           <div><strong>{{ formatNumber(quote.price, quote.converted ? 4 : 2) }}</strong><span>{{ quote.unit }}</span></div>
           <p>{{ quote.description }}</p>
@@ -43,7 +42,7 @@
     <el-tabs v-model="tab" @tab-change="onTabChange">
       <el-tab-pane label="金价看板" name="dashboard">
         <div class="quote-card-grid" v-loading="loading">
-          <el-empty v-if="!watches.length" description="暂无金价关注项，可以先新增伦敦金、同花顺黄金或品牌首饰金价" />
+          <el-empty v-if="!watches.length" description="暂无金价关注项，可以先新增伦敦金、国内金价或平台报价金" />
           <article v-for="item in watches" :key="item.id" class="quote-card" :class="typeClass(item.goldType)">
             <div class="quote-card-top">
               <div>
@@ -196,7 +195,6 @@ const tab = ref('dashboard');
 const goldTypes = [
   { label: '伦敦金', value: 'LONDON_GOLD' },
   { label: '国内金价', value: 'DOMESTIC_GOLD' },
-  { label: '品牌首饰金价', value: 'BRAND_JEWELRY' },
   { label: '银行/平台报价金', value: 'PLATFORM_GOLD' },
 ];
 const filters = reactive({ keyword: '', goldType: '' });
@@ -214,14 +212,11 @@ const publicCountdown = ref(60);
 const filteredPublicQuotes = computed(() => {
   const quotes = publicQuotes.value?.quotes || [];
   if (!dashboardFilter.goldType) return quotes;
-  if (dashboardFilter.goldType === 'BRAND_JEWELRY') return quotes.filter(quote => quote.code.startsWith('JEWELRY_'));
   if (dashboardFilter.goldType === 'LONDON_GOLD') return quotes.filter(quote => quote.code === 'XAU_USD');
   if (dashboardFilter.goldType === 'DOMESTIC_GOLD') return quotes.filter(quote => quote.code === 'XAU_CNY_GRAM');
   return [];
 });
-const publicEmptyText = computed(() => dashboardFilter.goldType === 'BRAND_JEWELRY'
-  ? publicQuotes.value?.jewelryMessage || '暂无品牌首饰金价'
-  : '当前类型暂无免配置实时行情');
+const publicEmptyText = computed(() => '当前类型暂无免配置实时行情');
 let publicTimer: number | undefined;
 const watchVisible = ref(false);
 const configVisible = ref(false);
@@ -297,7 +292,6 @@ onBeforeUnmount(() => { if (publicTimer) window.clearInterval(publicTimer); });
 .public-quotes { padding: 20px; border-radius: 22px; background: #fff; box-shadow: 0 12px 32px rgba(35,24,10,.08); }
 .public-heading, .public-heading > div, .public-quotes > footer { display: flex; align-items: center; gap: 12px; }
 .public-heading { justify-content: space-between; margin-bottom: 16px; }
-.jewelry-alert { margin-bottom: 14px; }
 .public-heading small, .public-quotes > footer { color: #8a7a64; }
 .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,.13); }
 .public-card-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; min-height: 150px; }
@@ -332,7 +326,6 @@ onBeforeUnmount(() => { if (publicTimer) window.clearInterval(publicTimer); });
 .gold-change-flat { color: #64748b; }
 .gold-type-london-gold { background: linear-gradient(180deg, #fff7ed, #fff); }
 .gold-type-domestic-gold { background: linear-gradient(180deg, #fefce8, #fff); }
-.gold-type-brand-jewelry { background: linear-gradient(180deg, #fff1f2, #fff); }
 .gold-type-platform-gold { background: linear-gradient(180deg, #eff6ff, #fff); }
 @media (max-width: 960px) { .public-card-grid { grid-template-columns: 1fr; } .public-heading, .public-quotes > footer { align-items: flex-start; flex-direction: column; } .gold-hero { flex-direction: column; align-items: flex-start; } .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

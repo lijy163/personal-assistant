@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 044-remove-jewelry-gold-data
+      author: personal-assistant
+      changes:
+        - sql:
+            sql: >-
+              delete from gold_price_alert_state
+              where alert_key in (select alert_key from gold_price_alert_rule where quote_type = 'JEWELRY')
+        - delete:
+            tableName: gold_price_alert_rule
+            where: quote_type = 'JEWELRY'
+        - delete:
+            tableName: gold_watch_item
+            where: gold_type = 'BRAND_JEWELRY'

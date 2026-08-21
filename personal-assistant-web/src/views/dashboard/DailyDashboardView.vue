@@ -18,7 +18,7 @@
       </template>
       <el-alert v-if="goldError" title="实时金价暂时不可用，请稍后重试" type="warning" :closable="false" show-icon />
       <div v-else class="gold-quotes" v-loading="goldLoading">
-        <div v-for="quote in displayedGoldQuotes" :key="quote.code" class="gold-quote" :class="{ jewelry: isJewelry(quote) }">
+        <div v-for="quote in displayedGoldQuotes" :key="quote.code" class="gold-quote">
           <small>{{ quoteLabel(quote) }}</small>
           <strong>{{ goldPrice(quote.price, quote.converted) }}</strong><span>{{ quote.unit }}</span>
           <p>{{ quote.displayName }}</p>
@@ -43,7 +43,6 @@ const data = ref<DailyDashboard>();
 const goldQuotes = ref<GoldPublicQuoteResponse>();
 const goldLoading = ref(false);
 const goldError = ref(false);
-const dashboardJewelryBrands = new Set(['周大福', '老庙']);
 const cards = computed(() => [
   { label: '今日任务', value: data.value?.todayTaskCount || 0, help: '计划在今天完成', route: '/life', type: '' },
   { label: '逾期任务', value: data.value?.overdueTaskCount || 0, help: '需要重新安排', route: '/work', type: 'warning' },
@@ -54,22 +53,15 @@ const cards = computed(() => [
   { label: '进行中学习计划', value: data.value?.activeLearningCount || 0, help: '保持成长节奏', route: '/learning/plans', type: '' },
   { label: '资金流显著变化', value: data.value?.fundFlowAlertCount || 0, help: '仅作行情指标参考', route: '/stocks', type: 'warning' },
 ]);
-const displayedGoldQuotes = computed(() => {
-  const quotes = goldQuotes.value?.quotes || [];
-  const dashboardJewelryQuotes = quotes.filter(quote =>
-    isJewelry(quote) && dashboardJewelryBrands.has(quote.code.slice('JEWELRY_'.length)),
-  );
-  return [...quotes.filter(quote => !isJewelry(quote)), ...dashboardJewelryQuotes];
-});
+const displayedGoldQuotes = computed(() => goldQuotes.value?.quotes || []);
 const money = (value?: number) => Number(value || 0).toFixed(2);
 const goldPrice = (value: number, converted: boolean) => value.toFixed(converted ? 4 : 2);
 const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN');
-const isJewelry = (quote: GoldPublicQuote) => quote.code.startsWith('JEWELRY_');
-const quoteLabel = (quote: GoldPublicQuote) => isJewelry(quote) ? '品牌首饰零售价' : quote.converted ? '人民币折算参考' : '国际市场现货';
+const quoteLabel = (quote: GoldPublicQuote) => quote.converted ? '人民币折算参考' : '国际市场现货';
 async function loadGold() { goldLoading.value = true; try { goldQuotes.value = (await getGoldPublicQuotes()).data; goldError.value = false; } catch { goldError.value = true; } finally { goldLoading.value = false; } }
 onMounted(() => { void getDailyDashboard().then(response => { data.value = response.data; }); void loadGold(); });
 </script>
 
 <style scoped>
-.mobile-quick{display:none}.dashboard-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}.dashboard-cards .el-card{cursor:pointer}.dashboard-cards small,.dashboard-cards span{display:block;color:#64748b}.dashboard-cards b{display:block;font-size:28px;margin:10px 0}.warning{color:#ea580c}.gold-card{margin-bottom:16px}.gold-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.gold-header>div:first-child{display:flex;align-items:baseline;gap:12px}.gold-header span,.gold-source{font-size:12px;color:#94a3b8}.gold-quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.gold-quote{padding:16px 18px;border:1px solid #f1d9a6;border-radius:12px;background:linear-gradient(135deg,#fffaf0,#fff)}.gold-quote.jewelry{background:linear-gradient(135deg,#fff7ed,#fffbeb)}.gold-quote small{display:block;color:#9a7b4f}.gold-quote strong{display:inline-block;margin:8px 8px 4px 0;font-size:28px;color:#b45309}.gold-quote span{color:#475569}.gold-quote p{margin:2px 0 0;font-weight:600;color:#1e293b}.gold-source{margin-top:10px;text-align:right}.finance{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.finance small,.finance b{display:block}.finance b{font-size:20px;margin-top:8px}.income{color:#16a34a}.expense{color:#dc2626}@media(max-width:900px){.dashboard-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.mobile-quick{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:16px;color:white;background:linear-gradient(135deg,#2563eb,#14b8a6);border-radius:16px}.mobile-quick div{display:flex;flex-direction:column;gap:4px}.mobile-quick span{font-size:12px;opacity:.85}.mobile-quick .el-button{color:#1d4ed8;background:white;border:0}.dashboard-cards{grid-template-columns:repeat(2,1fr);gap:10px}.dashboard-cards :deep(.el-card__body){padding:14px}.dashboard-cards b{font-size:22px}.gold-header,.gold-header>div:first-child{align-items:flex-start}.gold-header>div:first-child{flex-direction:column;gap:4px}.gold-quotes{grid-template-columns:1fr}.gold-quote strong{font-size:24px}.finance{grid-template-columns:1fr}}
+.mobile-quick{display:none}.dashboard-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}.dashboard-cards .el-card{cursor:pointer}.dashboard-cards small,.dashboard-cards span{display:block;color:#64748b}.dashboard-cards b{display:block;font-size:28px;margin:10px 0}.warning{color:#ea580c}.gold-card{margin-bottom:16px}.gold-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.gold-header>div:first-child{display:flex;align-items:baseline;gap:12px}.gold-header span,.gold-source{font-size:12px;color:#94a3b8}.gold-quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.gold-quote{padding:16px 18px;border:1px solid #f1d9a6;border-radius:12px;background:linear-gradient(135deg,#fffaf0,#fff)}.gold-quote small{display:block;color:#9a7b4f}.gold-quote strong{display:inline-block;margin:8px 8px 4px 0;font-size:28px;color:#b45309}.gold-quote span{color:#475569}.gold-quote p{margin:2px 0 0;font-weight:600;color:#1e293b}.gold-source{margin-top:10px;text-align:right}.finance{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.finance small,.finance b{display:block}.finance b{font-size:20px;margin-top:8px}.income{color:#16a34a}.expense{color:#dc2626}@media(max-width:900px){.dashboard-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.mobile-quick{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:16px;color:white;background:linear-gradient(135deg,#2563eb,#14b8a6);border-radius:16px}.mobile-quick div{display:flex;flex-direction:column;gap:4px}.mobile-quick span{font-size:12px;opacity:.85}.mobile-quick .el-button{color:#1d4ed8;background:white;border:0}.dashboard-cards{grid-template-columns:repeat(2,1fr);gap:10px}.dashboard-cards :deep(.el-card__body){padding:14px}.dashboard-cards b{font-size:22px}.gold-header,.gold-header>div:first-child{align-items:flex-start}.gold-header>div:first-child{flex-direction:column;gap:4px}.gold-quotes{grid-template-columns:1fr}.gold-quote strong{font-size:24px}.finance{grid-template-columns:1fr}}
 </style>

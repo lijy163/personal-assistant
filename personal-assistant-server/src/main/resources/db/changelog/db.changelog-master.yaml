@@ -42,3 +42,4 @@ databaseChangeLog:
   - include: { file: db/changelog/041-add-codex-agent-model.yaml }
   - include: { file: db/changelog/042-create-codex-cloud-config.yaml }
   - include: { file: db/changelog/043-add-life-task-reminder-time.yaml }
+  - include: { file: db/changelog/044-remove-jewelry-gold-data.yaml }

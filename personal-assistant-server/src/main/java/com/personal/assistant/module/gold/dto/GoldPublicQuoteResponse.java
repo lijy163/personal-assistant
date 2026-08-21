@@ -10,10 +10,7 @@ public record GoldPublicQuoteResponse(
         LocalDateTime quoteTime,
         LocalDateTime fetchedAt,
         String source,
-        int refreshIntervalSeconds,
-        boolean jewelryConfigured,
-        boolean jewelryLoaded,
-        String jewelryMessage
+        int refreshIntervalSeconds
 ) {
     public record Quote(
             String code,

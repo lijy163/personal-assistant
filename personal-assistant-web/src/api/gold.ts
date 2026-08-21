@@ -105,7 +105,7 @@ export interface GoldPriceAlertRule {
   id: number;
   alertKey: string;
   title: string;
-  quoteType: 'MARKET' | 'JEWELRY';
+  quoteType: 'MARKET';
   threshold: number;
   brandNames: string | null;
   enabled: boolean;
@@ -119,7 +119,7 @@ export interface GoldPriceAlertRule {
 
 export interface GoldPriceAlertRulePayload {
   title: string;
-  quoteType: 'MARKET' | 'JEWELRY';
+  quoteType: 'MARKET';
   threshold: number;
   brandNames: string | null;
   enabled: boolean;
@@ -131,9 +131,6 @@ export interface GoldPublicQuoteResponse {
   fetchedAt: string;
   source: string;
   refreshIntervalSeconds: number;
-  jewelryConfigured: boolean;
-  jewelryLoaded: boolean;
-  jewelryMessage: string;
 }
 export const listGoldWatchItems = (params: Record<string, unknown> = {}) =>
   http.get<unknown, { data: GoldWatchItem[] }>('/gold/watch-items', { params });

@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -48,22 +49,14 @@ class GoldPriceAlertServiceTest {
     }
 
     @Test
-    void sendsThreeIndependentAlertsFromDatabaseRules() {
-        when(rules.selectList(any())).thenReturn(List.of(
-                rule("MARKET_800", "MARKET", "800", null),
-                rule("JEWELRY_1000", "JEWELRY", "1000", "周大福,老庙"),
-                rule("JEWELRY_900", "JEWELRY", "900", "周大福,老庙")
-        ));
+    void sendsMarketAlertFromDatabaseRule() {
+        when(rules.selectList(any())).thenReturn(List.of(rule("MARKET_800", "MARKET", "800", null)));
         when(states.selectOne(any())).thenReturn(null);
 
-        service.scanUser(3L, channel, response(
-                quote("XAU_CNY_GRAM", "799"),
-                quote("JEWELRY_周大福", "899"),
-                quote("JEWELRY_老庙", "920")
-        ));
+        service.scanUser(3L, channel, response(quote("XAU_CNY_GRAM", "799")));
 
-        verify(notifications, times(3)).send(eq(3L), eq(null), eq(7L), any(), any());
-        verify(states, times(3)).insert(any(GoldPriceAlertState.class));
+        verify(notifications).send(eq(3L), eq(null), eq(7L), any(), any());
+        verify(states).insert(any(GoldPriceAlertState.class));
     }
 
     @Test
@@ -80,27 +73,23 @@ class GoldPriceAlertServiceTest {
     }
 
     @Test
-    void matchesOnlyBrandsStoredOnJewelryRule() {
-        when(rules.selectList(any())).thenReturn(List.of(rule("JEWELRY_900", "JEWELRY", "900", "周大福,老庙")));
-
-        service.scanUser(3L, channel, response(quote("JEWELRY_君佩", "850")));
-
-        verify(notifications, never()).send(any(), any(), any(), any(), any());
-        verify(states, never()).insert(any(GoldPriceAlertState.class));
+    void rejectsJewelryAlertRule() {
+        assertThrows(RuntimeException.class, () -> service.saveRule(3L, null,
+                new GoldPriceAlertRuleRequest("首饰金跌破 950", "JEWELRY", decimal("950"), "周大福", true)));
     }
 
     @Test
     void savesEditableRuleAndResetsPreviousState() {
-        GoldPriceAlertRule existing = rule("JEWELRY_1000", "JEWELRY", "1000", "周大福,老庙");
+        GoldPriceAlertRule existing = rule("MARKET_800", "MARKET", "800", null);
         existing.setId(9L);
         when(rules.selectById(9L)).thenReturn(existing);
 
         Long id = service.saveRule(3L, 9L,
-                new GoldPriceAlertRuleRequest("首饰金跌破 950", "JEWELRY", decimal("950"), "周大福", true));
+                new GoldPriceAlertRuleRequest("实时金价跌破 750", "MARKET", decimal("750"), null, true));
 
         assertEquals(9L, id);
-        assertEquals(decimal("950"), existing.getThreshold());
-        assertEquals("周大福", existing.getBrandNames());
+        assertEquals(decimal("750"), existing.getThreshold());
+        assertEquals(null, existing.getBrandNames());
         verify(rules).updateById(existing);
         verify(states).delete(any());
     }
@@ -128,7 +117,7 @@ class GoldPriceAlertServiceTest {
 
     private GoldPublicQuoteResponse response(GoldPublicQuoteResponse.Quote... quotes) {
         LocalDateTime now = LocalDateTime.now();
-        return new GoldPublicQuoteResponse(List.of(quotes), decimal("7.2"), now, now, "test", 60, true, true, "ok");
+        return new GoldPublicQuoteResponse(List.of(quotes), decimal("7.2"), now, now, "test", 60);
     }
 
     private GoldPublicQuoteResponse.Quote quote(String code, String price) {

@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 @Service
 public class GoldPriceAlertService {
     private static final Logger log = LoggerFactory.getLogger(GoldPriceAlertService.class);
-    private static final Set<String> QUOTE_TYPES = Set.of("MARKET", "JEWELRY");
+    private static final Set<String> QUOTE_TYPES = Set.of("MARKET");
 
     private final PublicGoldQuoteService quotes;
     private final NotificationChannelMapper channels;
@@ -60,6 +59,7 @@ public class GoldPriceAlertService {
                 .eq(NotificationChannel::getEnabled, true)) > 0;
         return rules.selectList(new LambdaQueryWrapper<GoldPriceAlertRule>()
                         .eq(GoldPriceAlertRule::getUserId, userId)
+                        .eq(GoldPriceAlertRule::getQuoteType, "MARKET")
                         .orderByAsc(GoldPriceAlertRule::getId))
                 .stream().map(rule -> response(rule, stateByKey.get(rule.getAlertKey()), channelConfigured)).toList();
     }
@@ -76,7 +76,7 @@ public class GoldPriceAlertService {
         rule.setTitle(request.title().trim());
         rule.setQuoteType(request.quoteType().trim().toUpperCase());
         rule.setThreshold(request.threshold());
-        rule.setBrandNames(normalizeBrands(request.brandNames()));
+        rule.setBrandNames(null);
         rule.setEnabled(!Boolean.FALSE.equals(request.enabled()));
         rule.setUpdatedAt(LocalDateTime.now());
         if (id == null) rules.insert(rule); else rules.updateById(rule);
@@ -114,6 +114,7 @@ public class GoldPriceAlertService {
         rules.selectList(new LambdaQueryWrapper<GoldPriceAlertRule>()
                         .eq(GoldPriceAlertRule::getUserId, userId)
                         .eq(GoldPriceAlertRule::getEnabled, true)
+                        .eq(GoldPriceAlertRule::getQuoteType, "MARKET")
                         .orderByAsc(GoldPriceAlertRule::getId))
                 .forEach(rule -> evaluateRule(userId, channel, rule, response));
     }
@@ -167,9 +168,7 @@ public class GoldPriceAlertService {
         String status = !Boolean.TRUE.equals(rule.getEnabled()) ? "DISABLED"
                 : !channelConfigured ? "NO_CHANNEL"
                 : state != null && Boolean.TRUE.equals(state.getBelowThreshold()) ? "TRIGGERED" : "MONITORING";
-        String condition = "MARKET".equals(rule.getQuoteType())
-                ? "实时折算金价 < " + price(rule.getThreshold()) + " 元/克"
-                : displayBrands(rule) + "任一品牌 < " + price(rule.getThreshold()) + " 元/克";
+        String condition = "实时折算金价 < " + price(rule.getThreshold()) + " 元/克";
         return new GoldPriceAlertRuleResponse(rule.getId(), rule.getAlertKey(), rule.getTitle(), rule.getQuoteType(),
                 rule.getThreshold(), rule.getBrandNames(), Boolean.TRUE.equals(rule.getEnabled()), condition, status,
                 state == null ? null : state.getLastPrice(), state == null ? null : state.getLastNotifiedAt(),
@@ -177,30 +176,16 @@ public class GoldPriceAlertService {
     }
 
     private boolean matches(GoldPriceAlertRule rule, GoldPublicQuoteResponse.Quote quote) {
-        if ("MARKET".equals(rule.getQuoteType())) return "XAU_CNY_GRAM".equals(quote.code());
-        return quote.code().startsWith("JEWELRY_") && brands(rule).contains(label(quote));
-    }
-
-    private Set<String> brands(GoldPriceAlertRule rule) {
-        if (!StringUtils.hasText(rule.getBrandNames())) return Set.of();
-        return java.util.Arrays.stream(rule.getBrandNames().split("[,，]"))
-                .map(String::trim).filter(StringUtils::hasText).collect(Collectors.toSet());
-    }
-
-    private String displayBrands(GoldPriceAlertRule rule) {
-        return brands(rule).stream().sorted().collect(Collectors.joining("、"));
+        return "MARKET".equals(rule.getQuoteType()) && "XAU_CNY_GRAM".equals(quote.code());
     }
 
     private String label(GoldPublicQuoteResponse.Quote quote) {
-        return quote.code().startsWith("JEWELRY_") ? quote.code().substring("JEWELRY_".length()) : "实时折算金价";
+        return "实时折算金价";
     }
 
     private void validate(GoldPriceAlertRuleRequest request) {
         String type = request.quoteType().trim().toUpperCase();
         if (!QUOTE_TYPES.contains(type)) throw new BusinessException(ErrorCode.VALIDATION_ERROR, "不支持的金价类型");
-        if ("JEWELRY".equals(type) && !StringUtils.hasText(request.brandNames())) {
-            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "首饰金规则至少需要一个品牌");
-        }
     }
 
     private GoldPriceAlertRule requireRule(Long userId, Long id) {
@@ -215,12 +200,6 @@ public class GoldPriceAlertService {
         states.delete(new LambdaQueryWrapper<GoldPriceAlertState>()
                 .eq(GoldPriceAlertState::getUserId, userId)
                 .eq(GoldPriceAlertState::getAlertKey, alertKey));
-    }
-
-    private String normalizeBrands(String value) {
-        if (!StringUtils.hasText(value)) return null;
-        return java.util.Arrays.stream(value.split("[,，]"))
-                .map(String::trim).filter(StringUtils::hasText).distinct().collect(Collectors.joining(","));
     }
 
     private void scanUserSafely(Long userId, NotificationChannel channel, GoldPublicQuoteResponse response) {
