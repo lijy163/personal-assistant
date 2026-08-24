@@ -21,7 +21,7 @@
       </el-sub-menu>
       <el-sub-menu index="finance">
         <template #title><el-icon><TrendCharts /></el-icon><span>财务市场</span></template>
-        <el-menu-item index="/finance">个人账单</el-menu-item><el-menu-item index="/finance-planning">预算与净资产</el-menu-item><el-menu-item index="/stocks">股票关注</el-menu-item><el-menu-item index="/trading-reviews">交易复盘</el-menu-item><el-menu-item index="/gold">金价关注</el-menu-item><el-menu-item index="/reports">自动报告</el-menu-item>
+        <el-menu-item index="/finance">个人账单</el-menu-item><el-menu-item index="/finance-planning">预算与净资产</el-menu-item><el-menu-item index="/stocks">股票关注</el-menu-item><el-menu-item index="/trading-reviews">交易复盘</el-menu-item><el-menu-item index="/trading-rules">交易规则</el-menu-item><el-menu-item index="/trading-plans">次日计划</el-menu-item><el-menu-item index="/gold">金价关注</el-menu-item><el-menu-item index="/reports">自动报告</el-menu-item>
       </el-sub-menu>
       <el-sub-menu index="system">
         <template #title><el-icon><Setting /></el-icon><span>系统管理</span></template>
@@ -44,7 +44,7 @@ const groupRoutes: Record<string, string[]> = {
   home: ['/dashboard', '/inbox', '/inbox/organize'],
   tasks: ['/calendar', '/project-workbench', '/life', '/work', '/reminders', '/automation', '/life-management'],
   knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage', '/blog'],
-  finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/gold', '/reports'],
+  finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/trading-rules', '/trading-plans', '/gold', '/reports'],
   system: ['/security-audit', '/scheduler', '/devlog-tokens', '/codex-agents', '/system', '/operations'],
 };
 const group = computed(() => {

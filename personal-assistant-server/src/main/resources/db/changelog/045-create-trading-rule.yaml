@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 045-create-trading-rule
+      author: personal-assistant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE trading_rule (
+                id bigserial PRIMARY KEY, user_id bigint NOT NULL, name varchar(200) NOT NULL, category varchar(30) NOT NULL DEFAULT 'BUY',
+                summary text, buy_conditions text NOT NULL, forbidden_conditions text, sell_conditions text, checklist text,
+                max_position numeric(12,4), enabled boolean NOT NULL DEFAULT true, version int NOT NULL DEFAULT 1,
+                created_at timestamp NOT NULL, updated_at timestamp NOT NULL
+              );
+              CREATE INDEX idx_trading_rule_user_updated ON trading_rule(user_id, updated_at DESC);
+              ALTER TABLE trading_log ADD COLUMN rule_id bigint;
+              ALTER TABLE trading_log ADD COLUMN rule_version int;
+              ALTER TABLE trading_log ADD CONSTRAINT fk_trading_log_rule FOREIGN KEY(rule_id) REFERENCES trading_rule(id) ON DELETE SET NULL;
+              CREATE INDEX idx_trading_log_rule ON trading_log(user_id, rule_id);
+              ALTER TABLE trading_log ADD COLUMN rule_checklist_snapshot text;
+              ALTER TABLE trading_next_plan ADD COLUMN rule_ids text;

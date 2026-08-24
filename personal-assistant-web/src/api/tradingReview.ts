@@ -11,13 +11,16 @@ export interface DailyReview {
   holdingCheck?: string; manualJudgment?: string;
 }
 export type ReviewPayload = Omit<DailyReview, 'id' | 'sentimentScore' | 'marketStage' | 'suggestedPosition' | 'autoConclusion' | 'ruleVersion' | 'dimensionScores' | 'rawMetrics' | 'dataSource' | 'quoteTime' | 'collectedAt' | 'dataCompleteness' | 'freshness' | 'collectionStatus' | 'failureReason' | 'lastSuccessAt'>;
-export interface TradeLog { id:number; watchItemId?:number; sourceAlertEventId?:number; sourceMarketAlertEventId?:number; signalType?:string; signalReason?:string; stockCode:string; stockName:string; status:string; strategy?:string; buyLogic?:string; sellLogic?:string; planned:boolean; planExecutionNote?:string; questionBuyLogic?:string; questionSealFunds?:string; questionTakeoverFunds?:string; latestPrice?:number; openedAt?:string; closedAt?:string; notes?:string; }
-export type TradePayload = Omit<TradeLog, 'id'>;
+export interface TradingRule { id:number; name:string; category:string; summary?:string; buyConditions:string; forbiddenConditions?:string; sellConditions?:string; checklist?:string; maxPosition?:number; enabled:boolean; version:number; updatedAt?:string; }
+export type TradingRulePayload = Omit<TradingRule, 'id'|'version'|'updatedAt'>;
+export interface TradingRuleStats { ruleId:number; totalTrades:number; plannedTrades:number; openTrades:number; closedTrades:number; }
+export interface TradeLog { id:number; watchItemId?:number; ruleId?:number; ruleVersion?:number; ruleChecklistSnapshot?:string; sourceAlertEventId?:number; sourceMarketAlertEventId?:number; signalType?:string; signalReason?:string; stockCode:string; stockName:string; status:string; strategy?:string; buyLogic?:string; sellLogic?:string; planned:boolean; planExecutionNote?:string; questionBuyLogic?:string; questionSealFunds?:string; questionTakeoverFunds?:string; latestPrice?:number; openedAt?:string; closedAt?:string; notes?:string; }
+export type TradePayload = Omit<TradeLog, 'id'|'ruleVersion'>;
 export interface Execution { id:number; tradeLogId:number; side:'BUY'|'SELL'; quantity:number; price:number; commission:number; stampDuty:number; transferFee:number; occurredAt:string; remark?:string; }
 export type ExecutionPayload = Omit<Execution, 'id'|'tradeLogId'>;
 export interface TradeMetrics { buyQuantity:number; sellQuantity:number; remainingQuantity:number; averageCost:number; realizedProfit:number; unrealizedProfit:number; totalFees:number; returnRate:number; holdingDays:number; }
 export interface TradeDetail { trade:TradeLog; executions:Execution[]; metrics:TradeMetrics; }
-export interface NextPlan { id:number; tradeDate:string; marketPremise?:string; targetPosition?:number; watchStocks?:string; plannedTrades?:string; riskControls?:string; reminderIds?:string; reportNote?:string; status:string; }
+export interface NextPlan { id:number; tradeDate:string; marketPremise?:string; targetPosition?:number; watchStocks?:string; plannedTrades?:string; riskControls?:string; reminderIds?:string; ruleIds?:string; reportNote?:string; status:string; }
 export type PlanPayload = Omit<NextPlan, 'id'>;
 export interface TradingMistake { id:number; tradeLogId?:number; occurredDate:string; category:string; title:string; description?:string; rootCause?:string; correction?:string; status:string; repeatCount:number; }
 export type MistakePayload = Omit<TradingMistake, 'id'>;
@@ -59,6 +62,11 @@ export const removeReview=(id:number)=>http.delete(`/trading-reviews/reviews/${i
 export const refreshMarket=(tradeDate:string,snapshotType:string)=>http.post<unknown,{data:CollectionResult}>('/trading-reviews/market/refresh',null,{params:{tradeDate,snapshotType}});
 export const getReviewAnalytics=(tradeDate:string)=>http.get<unknown,{data:ReviewAnalytics}>('/trading-reviews/analytics',{params:{tradeDate}});
 export const listTrades=()=>http.get<unknown,{data:TradeLog[]}>('/trading-reviews/trades');
+export const listTradingRules=()=>http.get<unknown,{data:TradingRule[]}>('/trading-reviews/rules');
+export const listTradingRuleStats=()=>http.get<unknown,{data:TradingRuleStats[]}>('/trading-reviews/rules/stats');
+export const saveTradingRule=(data:TradingRulePayload,id?:number)=>id?http.put(`/trading-reviews/rules/${id}`,data):http.post('/trading-reviews/rules',data);
+export const toggleTradingRule=(id:number,enabled:boolean)=>http.patch(`/trading-reviews/rules/${id}/enabled`,null,{params:{enabled}});
+export const removeTradingRule=(id:number)=>http.delete(`/trading-reviews/rules/${id}`);
 export const getTrade=(id:number)=>http.get<unknown,{data:TradeDetail}>(`/trading-reviews/trades/${id}`);
 export const saveTrade=(data:TradePayload,id?:number)=>id?http.put(`/trading-reviews/trades/${id}`,data):http.post('/trading-reviews/trades',data);
 export const removeTrade=(id:number)=>http.delete(`/trading-reviews/trades/${id}`);
