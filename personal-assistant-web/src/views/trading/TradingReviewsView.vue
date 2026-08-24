@@ -173,6 +173,22 @@ onMounted(async()=>{window.addEventListener('beforeunload',beforeUnload);trading
 </style>
 
 <style scoped>
+.trading-page{gap:28px;padding-bottom:42px}
+.hero{min-height:208px;padding:40px 44px;border-radius:28px}
+.hero-copy{max-width:760px}.hero h2{margin:12px 0 10px;font-size:38px}.hero p{font-size:16px;line-height:1.8}.hero-actions{gap:12px}.hero-actions :deep(.el-button){min-width:126px;height:48px;padding:0 22px;border-radius:14px;font-size:15px}
+.workflow-strip{min-height:108px;padding:24px 34px;border-radius:22px}.workflow-step{gap:14px;min-width:220px;padding:8px 6px}.workflow-step b{font-size:16px}.workflow-step small{margin-top:6px;font-size:13px}.step-index{width:40px;height:40px;border-radius:13px;font-size:12px}.workflow-line{margin:0 24px}
+.overview-grid{gap:18px}.overview-card{min-height:178px;border-radius:22px!important}.overview-card :deep(.el-card__body){padding:26px 24px}.overview-label{font-size:14px}.overview-card strong{margin:14px 0 8px;font-size:31px}.overview-card strong em{font-size:13px}.overview-card span{font-size:13px}.overview-card .el-button{padding-top:18px;font-size:14px}
+.review-tabs{padding-top:8px}.review-tabs :deep(.el-tabs__header){margin-bottom:26px;padding:0 8px}.review-tabs :deep(.el-tabs__item){height:56px;padding:0 22px;font-size:16px}
+.section-intro{margin-bottom:22px}.section-intro h3{font-size:23px}.section-intro p{margin-top:8px;font-size:14px}.section-intro :deep(.el-button){height:44px;padding:0 20px}
+.filter-bar{gap:12px;padding:14px;margin-bottom:22px;border-radius:16px}.filter-bar :deep(.el-input__wrapper),.filter-bar :deep(.el-select__wrapper),.filter-bar :deep(.el-date-editor){min-height:44px}.filter-search{flex-basis:320px}
+.review-summary,.stats{gap:18px;margin:20px 0}.review-summary :deep(.el-card),.stats :deep(.el-card){min-height:122px}.review-summary :deep(.el-card__body),.stats :deep(.el-card__body){padding:22px}.review-summary strong,.stats strong{margin:12px 0;font-size:28px}
+.note-list,.card-list{gap:18px}.note-card :deep(.el-card__header),.trade-card :deep(.el-card__header){padding:22px 22px 17px}.note-card :deep(.el-card__body),.trade-card :deep(.el-card__body){padding:22px}.record-title{margin-top:14px;font-size:18px}.note-content{font-size:15px;line-height:1.9}.trade-logic{padding:16px}.trade-actions{gap:10px;margin-top:20px}.trade-actions :deep(.el-button){min-height:38px;padding:0 14px}
+.trading-page :deep(.el-alert){margin-bottom:20px;padding:16px 18px}.trading-page :deep(.el-table th.el-table__cell){height:54px}.trading-page :deep(.el-table td.el-table__cell){height:62px}
+@media(max-width:1100px){.hero{padding:34px}.workflow-step{min-width:180px}.workflow-line{margin:0 14px}.overview-grid{gap:14px}}
+@media(max-width:600px){.trading-page{gap:18px;padding-bottom:28px}.hero{min-height:0;padding:30px 22px;border-radius:22px}.hero h2{font-size:31px}.hero p{font-size:14px;line-height:1.7}.hero-actions{gap:8px}.hero-actions :deep(.el-button){min-width:0;height:44px;padding:0 10px;font-size:13px}.workflow-strip{min-height:86px;padding:14px 10px}.workflow-step{gap:8px;min-width:0;padding:4px 2px}.workflow-step b{font-size:13px}.workflow-step small{display:none}.step-index{width:32px;height:32px;border-radius:10px}.workflow-line{margin:0 6px}.overview-card{min-height:150px}.overview-card :deep(.el-card__body){padding:20px 18px}.overview-card strong{font-size:26px}.review-tabs :deep(.el-tabs__header){margin-bottom:20px}.review-tabs :deep(.el-tabs__item){height:48px;padding:0 12px;font-size:14px}.section-intro{gap:14px;margin-bottom:18px}.filter-bar{gap:8px;padding:10px;margin-bottom:18px}.filter-search{flex-basis:100%}.note-card :deep(.el-card__header),.trade-card :deep(.el-card__header),.note-card :deep(.el-card__body),.trade-card :deep(.el-card__body){padding:18px}.review-summary,.stats{gap:10px;margin:16px 0}.review-summary :deep(.el-card),.stats :deep(.el-card){min-height:102px}}
+</style>
+
+<style scoped>
 .trading-page{gap:20px;padding-bottom:24px;background:linear-gradient(180deg,#f7fbff 0%,#f8fafc 42%,#fff 100%)}
 .hero{position:relative;min-height:172px;overflow:hidden;padding:30px 34px;border:1px solid rgb(147 197 253 / 26%);border-radius:26px;background:linear-gradient(118deg,#10264a 0%,#123e60 54%,#0f766e 100%);box-shadow:0 18px 42px rgb(30 64 175 / 14%)}
 .hero::after{content:'';position:absolute;right:-90px;bottom:-120px;width:360px;height:260px;border:1px solid rgb(255 255 255 / 12%);border-radius:50%;box-shadow:0 0 0 28px rgb(255 255 255 / 3%),0 0 0 56px rgb(255 255 255 / 2%);pointer-events:none}
