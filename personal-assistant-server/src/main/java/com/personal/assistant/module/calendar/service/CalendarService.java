@@ -76,6 +76,7 @@ public class CalendarService {
             CalendarCustomEvent item = customMapper.selectById(sourceId);
             if (item == null || !uid.equals(item.getUserId())) throw notFound();
             item.setStartAt(request.startAt()); item.setEndAt(request.endAt()); item.setAllDay(Boolean.TRUE.equals(request.allDay()));
+            item.setDescription(request.description());
             if (StringUtils.hasText(request.color())) item.setColor(request.color()); item.setUpdatedAt(now()); customMapper.updateById(item); return;
         }
         ensureSourceOwned(uid, sourceType, sourceId);
@@ -112,10 +113,11 @@ public class CalendarService {
     private String shortTitle(String value){String v=value==null?"学习记录":value.replace('\n',' ');return v.length()>40?v.substring(0,40)+"…":v;}
     private String color(String type){return switch(type){case "LIFE"->"#55b8c6";case "WORK"->"#5b7cfa";case "REMINDER"->"#ef8f82";case "LEARNING_PLAN","LEARNING_REVIEW","LEARNING_RECORD"->"#9b7bd7";case "TRADING_PLAN"->"#d6a35c";default->"#5b7cfa";};}
 
-    private record Event(String sourceType,Long sourceId,String title,LocalDateTime startAt,LocalDateTime endAt,boolean allDay,String status,String color,String route,String recurrenceRule,boolean workdayOnly,boolean overridden){
-        static Event custom(CalendarCustomEvent x){return new Event("CUSTOM",x.getId(),x.getTitle(),x.getStartAt(),x.getEndAt(),Boolean.TRUE.equals(x.getAllDay()),x.getStatus(),x.getColor(),"/calendar",x.getRecurrenceRule(),Boolean.TRUE.equals(x.getWorkdayOnly()),false);}
-        Event override(CalendarEventOverride x){return new Event(sourceType,sourceId,StringUtils.hasText(x.getTitleOverride())?x.getTitleOverride():title,x.getStartAt(),x.getEndAt(),Boolean.TRUE.equals(x.getAllDay()),status,StringUtils.hasText(x.getColor())?x.getColor():color,route,StringUtils.hasText(x.getRecurrenceRule())?x.getRecurrenceRule():recurrenceRule,Boolean.TRUE.equals(x.getWorkdayOnly()),true);}
-        Event at(LocalDateTime value){Duration d=endAt==null?null:Duration.between(startAt,endAt);return new Event(sourceType,sourceId,title,value,d==null?null:value.plus(d),allDay,status,color,route,recurrenceRule,workdayOnly,overridden);}
-        CalendarEventResponse response(boolean conflict){return new CalendarEventResponse(sourceType+":"+sourceId+":"+startAt,sourceType,sourceId,title,startAt,endAt,allDay,status,color,route,recurrenceRule,workdayOnly,overridden,conflict);}
+    private record Event(String sourceType,Long sourceId,String title,LocalDateTime startAt,LocalDateTime endAt,boolean allDay,String status,String color,String route,String recurrenceRule,boolean workdayOnly,boolean overridden,String description){
+        Event(String sourceType,Long sourceId,String title,LocalDateTime startAt,LocalDateTime endAt,boolean allDay,String status,String color,String route,String recurrenceRule,boolean workdayOnly,boolean overridden){this(sourceType,sourceId,title,startAt,endAt,allDay,status,color,route,recurrenceRule,workdayOnly,overridden,null);}
+        static Event custom(CalendarCustomEvent x){return new Event("CUSTOM",x.getId(),x.getTitle(),x.getStartAt(),x.getEndAt(),Boolean.TRUE.equals(x.getAllDay()),x.getStatus(),x.getColor(),"/calendar",x.getRecurrenceRule(),Boolean.TRUE.equals(x.getWorkdayOnly()),false,x.getDescription());}
+        Event override(CalendarEventOverride x){return new Event(sourceType,sourceId,StringUtils.hasText(x.getTitleOverride())?x.getTitleOverride():title,x.getStartAt(),x.getEndAt(),Boolean.TRUE.equals(x.getAllDay()),status,StringUtils.hasText(x.getColor())?x.getColor():color,route,StringUtils.hasText(x.getRecurrenceRule())?x.getRecurrenceRule():recurrenceRule,Boolean.TRUE.equals(x.getWorkdayOnly()),true,description);}
+        Event at(LocalDateTime value){Duration d=endAt==null?null:Duration.between(startAt,endAt);return new Event(sourceType,sourceId,title,value,d==null?null:value.plus(d),allDay,status,color,route,recurrenceRule,workdayOnly,overridden,description);}
+        CalendarEventResponse response(boolean conflict){return new CalendarEventResponse(sourceType+":"+sourceId+":"+startAt,sourceType,sourceId,title,startAt,endAt,allDay,status,color,route,recurrenceRule,workdayOnly,overridden,conflict,description);}
     }
 }

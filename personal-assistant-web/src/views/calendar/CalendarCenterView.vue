@@ -130,7 +130,7 @@ function openCreate(date = cursor.value, hour = 9, minute = 0) {
 }
 function openEvent(event: CalendarEvent) {
   editing.value = event;
-  Object.assign(form, { title: event.title, description: '', startAt: event.startAt, endAt: event.endAt || '', allDay: event.allDay, color: event.color, recurrenceRule: event.recurrenceRule || '', workdayOnly: event.workdayOnly });
+  Object.assign(form, { title: event.title, description: event.description || '', startAt: event.startAt, endAt: event.endAt || '', allDay: event.allDay, color: event.color, recurrenceRule: event.recurrenceRule || '', workdayOnly: event.workdayOnly });
   dirty.value = false;
   formVisible.value = true;
 }
@@ -139,7 +139,7 @@ async function save() {
   if (form.endAt && form.endAt <= form.startAt) { ElMessage.warning('结束时间必须晚于开始时间'); return; }
   saving.value = true;
   try {
-    if (editing.value) await moveCalendarEvent(editing.value.sourceType, editing.value.sourceId, { startAt: form.startAt, endAt: form.endAt || undefined, allDay: form.allDay, color: form.color });
+    if (editing.value) await moveCalendarEvent(editing.value.sourceType, editing.value.sourceId, { startAt: form.startAt, endAt: form.endAt || undefined, allDay: form.allDay, color: form.color, description: form.description });
     else await createCalendarEvent({ ...form, endAt: form.endAt || undefined, recurrenceRule: form.recurrenceRule || undefined });
     ElMessage.success(editing.value ? '日程时间已调整' : '日程已创建');
     dirty.value = false;
