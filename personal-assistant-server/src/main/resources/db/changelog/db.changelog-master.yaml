@@ -44,3 +44,4 @@ databaseChangeLog:
   - include: { file: db/changelog/043-add-life-task-reminder-time.yaml }
   - include: { file: db/changelog/044-remove-jewelry-gold-data.yaml }
   - include: { file: db/changelog/045-create-trading-rule.yaml }
+  - include: { file: db/changelog/046-create-activity-log.yaml }

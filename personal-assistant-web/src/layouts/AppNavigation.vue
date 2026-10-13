@@ -7,7 +7,7 @@
     <el-menu router :default-active="$route.path" :default-openeds="openGroups" :unique-opened="true" class="sidebar-menu" @open="handleOpen" @select="$emit('navigate')">
       <el-sub-menu index="home">
         <template #title><el-icon><House /></el-icon><span>首页</span></template>
-        <el-menu-item index="/dashboard">每日驾驶舱</el-menu-item><el-menu-item index="/inbox">统一收件箱</el-menu-item><el-menu-item index="/inbox/organize">收件箱整理</el-menu-item>
+        <el-menu-item index="/dashboard">每日驾驶舱</el-menu-item><el-menu-item index="/activity">每日活动记录</el-menu-item><el-menu-item index="/inbox">统一收件箱</el-menu-item><el-menu-item index="/inbox/organize">收件箱整理</el-menu-item>
       </el-sub-menu>
       <el-sub-menu index="tasks">
         <template #title><el-icon><Calendar /></el-icon><span>事务与生活</span></template>
@@ -41,7 +41,7 @@ defineEmits<{ navigate: [] }>();
 const route = useRoute();
 const router = useRouter();
 const groupRoutes: Record<string, string[]> = {
-  home: ['/dashboard', '/inbox', '/inbox/organize'],
+  home: ['/dashboard', '/activity', '/inbox', '/inbox/organize'],
   tasks: ['/calendar', '/project-workbench', '/life', '/work', '/reminders', '/automation', '/life-management'],
   knowledge: ['/knowledge', '/learning/plans', '/learning/records', '/learning/summaries', '/learning/growth', '/devlogs', '/blog/manage', '/blog'],
   finance: ['/finance', '/finance-planning', '/stocks', '/trading-reviews', '/trading-rules', '/trading-plans', '/gold', '/reports'],
@@ -49,7 +49,7 @@ const groupRoutes: Record<string, string[]> = {
 };
 const group = computed(() => {
   const path = route.path;
-  if (path === '/dashboard' || path.startsWith('/inbox')) return 'home';
+  if (path === '/dashboard' || path === '/activity' || path.startsWith('/inbox')) return 'home';
   if (groupRoutes.tasks.some((item) => path.startsWith(item))) return 'tasks';
   if (groupRoutes.knowledge.some((item) => path.startsWith(item))) return 'knowledge';
   if (groupRoutes.finance.some((item) => path.startsWith(item))) return 'finance';

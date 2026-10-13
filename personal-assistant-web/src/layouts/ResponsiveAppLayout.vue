@@ -13,7 +13,7 @@
     </el-container>
     <el-drawer v-model="mobileMenu" direction="ltr" size="min(86vw, 320px)" :with-header="false"><AppNavigation @navigate="mobileMenu=false" /></el-drawer>
     <el-dialog v-model="searchVisible" title="全局搜索" width="min(760px, 94vw)" class="mobile-full-dialog"><el-input v-model="searchKeyword" placeholder="搜索任务、开发日志、账单、学习总结、记录和股票" @keyup.enter="search"/><div class="search-results"><el-empty v-if="!searchResults.length" description="未找到相关内容"/><button v-for="item in searchResults" :key="item.type+item.id" class="search-item" @click="goResult(item)"><el-tag size="small">{{typeName(item.type)}}</el-tag><div><b v-html="highlight(item.title)"/><p v-html="highlight(item.snippet)"/></div><small>{{formatTime(item.occurredAt)}}</small></button></div></el-dialog>
-    <MobileBottomNav @collect="openCollector" />
+    <MobileBottomNav />
   </div>
 </template>
 <script setup lang="ts">

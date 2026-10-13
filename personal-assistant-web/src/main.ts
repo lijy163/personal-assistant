@@ -17,7 +17,7 @@ app.use(ElementPlus);
 app.mount('#app');
 
 scheduleRoutePreload(router, [
-  '/dashboard', '/calendar', '/project-workbench', '/life', '/work', '/inbox', '/reminders',
+  '/activity', '/dashboard', '/calendar', '/project-workbench', '/life', '/work', '/inbox', '/reminders',
   '/automation', '/knowledge', '/finance-planning', '/life-management', '/reports',
 ]);
 

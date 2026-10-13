@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 046-create-activity-log
+      author: personal-assistant
+      changes:
+        - createTable:
+            tableName: activity_log
+            columns:
+              - column: { name: id, type: bigserial, constraints: { primaryKey: true } }
+              - column: { name: user_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: content, type: text, constraints: { nullable: false } }
+              - column: { name: log_date, type: date, constraints: { nullable: false } }
+              - column: { name: occurred_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: category, type: varchar(30), defaultValue: OTHER, constraints: { nullable: false } }
+              - column: { name: tags, type: varchar(500) }
+              - column: { name: source, type: varchar(20), defaultValue: WEB, constraints: { nullable: false } }
+              - column: { name: pinned, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            tableName: activity_log
+            indexName: idx_activity_log_user_date
+            columns:
+              - column: { name: user_id }
+              - column: { name: log_date, descending: true }
+        - createIndex:
+            tableName: activity_log
+            indexName: idx_activity_log_user_occurred
+            columns:
+              - column: { name: user_id }
+              - column: { name: occurred_at, descending: true }
+        - sql:
+            dbms: postgresql
+            sql: CREATE INDEX idx_activity_log_search_fts ON activity_log USING GIN (to_tsvector('simple', coalesce(content,'') || ' ' || coalesce(tags,'')))
