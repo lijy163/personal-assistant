@@ -132,6 +132,7 @@
               <p class="entry-content">{{ item.content }}</p>
               <div class="entry-meta">
                 <span class="cat">{{ categoryLabel(item.category) }}</span>
+                <span v-if="item.source === 'CHECKIN'" class="source-badge">打卡同步</span>
                 <button
                   v-for="tag in splitTags(item.tags)"
                   :key="tag"
@@ -1017,6 +1018,14 @@ onBeforeUnmount(() => {
   color: #0f6e56;
   font-size: 12px;
   background: #e1f5ee;
+  border-radius: 6px;
+}
+
+.entry-meta .source-badge {
+  padding: 2px 8px;
+  color: #185fa5;
+  font-size: 12px;
+  background: #e6f1fb;
   border-radius: 6px;
 }
 

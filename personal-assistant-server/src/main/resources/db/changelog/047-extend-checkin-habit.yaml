@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 047-extend-checkin-habit
+      author: personal-assistant
+      comment: 打卡页需要展示图标、主题色与分类，并记录打卡同步生成的活动记录 id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE habit ADD COLUMN icon varchar(16);
+              ALTER TABLE habit ADD COLUMN color varchar(20) NOT NULL DEFAULT '#2563eb';
+              ALTER TABLE habit ADD COLUMN category varchar(20) NOT NULL DEFAULT 'OTHER';
+              ALTER TABLE habit ADD COLUMN note varchar(200);
+              ALTER TABLE habit ADD COLUMN sort_order int NOT NULL DEFAULT 0;
+              ALTER TABLE habit_checkin ADD COLUMN activity_log_id bigint;
+              CREATE INDEX idx_habit_user_active ON habit(user_id, active, sort_order);
+              CREATE INDEX idx_habit_checkin_user_date ON habit_checkin(user_id, checkin_date DESC);

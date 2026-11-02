@@ -28,10 +28,11 @@ public class ActivityLogService {
 
     public static final String CATEGORY_OTHER = "OTHER";
     public static final String SOURCE_WEB = "WEB";
+    public static final String SOURCE_CHECKIN = "CHECKIN";
 
     private static final Set<String> CATEGORIES =
             Set.of("WORK", "STUDY", "EXERCISE", "FOOD", "SOCIAL", "REST", "OTHER");
-    private static final Set<String> SOURCES = Set.of("WEB", "MOBILE_WEB", "API", "AGENT");
+    private static final Set<String> SOURCES = Set.of("WEB", "MOBILE_WEB", "API", "AGENT", "CHECKIN");
 
     private static final int MAX_TAG_LENGTH = 50;
     private static final int MAX_TAGS_LENGTH = 500;
@@ -165,6 +166,20 @@ public class ActivityLogService {
     public void delete(Long userId, Long id) {
         ActivityLog log = requireOwned(userId, id);
         activityLogMapper.deleteById(log.getId());
+    }
+
+    /**
+     * 供其他模块回滚自己生成的记录使用：记录已被用户手工删除时不报错。
+     */
+    @Transactional
+    public void deleteIfExists(Long userId, Long id) {
+        if (id == null) {
+            return;
+        }
+        ActivityLog log = activityLogMapper.selectById(id);
+        if (log != null && log.getUserId().equals(userId)) {
+            activityLogMapper.deleteById(log.getId());
+        }
     }
 
     private ActivityLog requireOwned(Long userId, Long id) {
