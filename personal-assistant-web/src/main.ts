@@ -1,4 +1,5 @@
 import ElementPlus from 'element-plus';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import 'element-plus/dist/index.css';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
@@ -13,11 +14,11 @@ const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);
-app.use(ElementPlus);
+app.use(ElementPlus, { locale: zhCn });
 app.mount('#app');
 
 scheduleRoutePreload(router, [
-  '/activity', '/dashboard', '/calendar', '/project-workbench', '/life', '/work', '/inbox', '/reminders',
+  '/activity', '/checkin', '/dashboard', '/calendar', '/project-workbench', '/life', '/work', '/inbox', '/reminders',
   '/automation', '/knowledge', '/finance-planning', '/life-management', '/reports',
 ]);
 

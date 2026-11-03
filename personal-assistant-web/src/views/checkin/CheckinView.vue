@@ -25,6 +25,7 @@
         <span>{{ isToday ? '点卡片完成打卡，再点一次撤销' : `正在为 ${shortDate(selectedDate)} 补记` }}</span>
         <div class="section-actions">
           <el-button v-if="!isToday" size="small" @click="selectDate(todayKey)">回到今天</el-button>
+          <el-button size="small" @click="togglePresets">{{ showPresets ? '收起模板' : '常用模板' }}</el-button>
           <el-button type="primary" size="small" plain @click="openHabitDialog()">新建打卡项</el-button>
         </div>
       </header>
@@ -60,10 +61,26 @@
       </div>
 
       <div v-else class="empty-habits">
-        <p>还没有打卡项，先挑一件想每天坚持的小事：</p>
-        <div class="preset-row">
-          <button v-for="preset in presets" :key="preset.name" type="button" class="preset-chip" @click="quickCreate(preset)">
-            <span>{{ preset.icon }}</span>{{ preset.name }}
+        <p>还没有打卡项：从下面的常用模板挑一项或整组添加（健身 / 作息 / 学习），也可以自己新建。</p>
+      </div>
+
+      <div v-show="showPresets" class="preset-block" :class="{ separated: activeHabits.length }">
+        <div v-for="group in presetGroups" :key="group.label" class="preset-group">
+          <span class="preset-label">{{ group.label }}</span>
+          <div class="preset-row">
+            <button
+              v-for="preset in group.items"
+              :key="preset.name"
+              type="button"
+              class="preset-chip"
+              :disabled="creating"
+              @click="quickCreate(preset)"
+            >
+              <span>{{ preset.icon }}</span>{{ preset.name }}
+            </button>
+          </div>
+          <button type="button" class="group-add" :disabled="creating" @click="addPresetGroup(group)">
+            整组添加
           </button>
         </div>
       </div>
@@ -251,16 +268,42 @@ interface HeatCell {
   future: boolean;
 }
 
+interface CheckinPreset {
+  name: string;
+  icon: string;
+  category: string;
+  note?: string;
+}
+
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const ICON_PRESETS = ['🌱', '☀️', '🏃', '📖', '💧', '🧘', '✍️', '🛏️', '💪', '🧹'];
 const COLOR_PRESETS = ['#2563eb', '#0f766e', '#7c3aed', '#db2777', '#ea580c', '#0891b2', '#65a30d', '#475569'];
-const PRESETS = [
-  { name: '早起', icon: '☀️', category: 'REST', note: '7 点前起床' },
-  { name: '运动 30 分钟', icon: '🏃', category: 'EXERCISE', note: '跑步或力量训练' },
-  { name: '读书 20 页', icon: '📖', category: 'STUDY', note: '' },
-  { name: '每日复盘', icon: '✍️', category: 'WORK', note: '写三行今日总结' },
-  { name: '喝水 2L', icon: '💧', category: 'FOOD', note: '' },
-  { name: '早睡', icon: '🛏️', category: 'REST', note: '23 点前躺下' },
+const PRESET_GROUPS: { label: string; items: CheckinPreset[] }[] = [
+  {
+    label: '健身',
+    items: [
+      { name: '俯卧撑 50 个', icon: '💪', category: 'EXERCISE', note: '分 3 组完成' },
+      { name: '深蹲 100 个', icon: '🦵', category: 'EXERCISE', note: '分 4 组完成' },
+      { name: '平板支撑 3 组', icon: '🧘', category: 'EXERCISE', note: '每组 60 秒' },
+      { name: '跑步 3 公里', icon: '🏃', category: 'EXERCISE', note: '慢跑即可' },
+      { name: '拉伸 10 分钟', icon: '🤸', category: 'EXERCISE', note: '久坐后放松肩颈' },
+    ],
+  },
+  {
+    label: '作息',
+    items: [
+      { name: '早起', icon: '☀️', category: 'REST', note: '7 点前起床' },
+      { name: '早睡', icon: '🛏️', category: 'REST', note: '23 点前躺下' },
+      { name: '喝水 2L', icon: '💧', category: 'FOOD', note: '分次喝完' },
+    ],
+  },
+  {
+    label: '学习',
+    items: [
+      { name: '读书 20 页', icon: '📖', category: 'STUDY', note: '' },
+      { name: '每日复盘', icon: '✍️', category: 'WORK', note: '写三行今日总结' },
+    ],
+  },
 ];
 
 const todayKey = toDateKey(new Date());
@@ -269,6 +312,8 @@ const loading = ref(false);
 const initialized = ref(false);
 const savingHabit = ref(false);
 const deleting = ref(false);
+const creating = ref(false);
+const presetOverride = ref<boolean | null>(null);
 const busyId = ref<number | null>(null);
 const selectedDate = ref(todayKey);
 const calendarValue = ref(parseDate(todayKey));
@@ -289,7 +334,7 @@ const habitForm = reactive({ name: '', icon: '', color: COLOR_PRESETS[0], catego
 
 const iconPresets = ICON_PRESETS;
 const colorPresets = COLOR_PRESETS;
-const presets = PRESETS;
+const presetGroups = PRESET_GROUPS;
 
 const isToday = computed(() => selectedDate.value === todayKey);
 const activeHabits = computed(() => overview.value.habits.filter((habit) => habit.active));
@@ -302,6 +347,11 @@ const progress = computed(() => {
 });
 const heroDateLabel = computed(() => `${selectedDate.value} ${WEEKDAYS[parseDate(selectedDate.value).getDay()]}`);
 const dayTitle = computed(() => (isToday.value ? '今天的打卡明细' : `${shortDate(selectedDate.value)} 打卡明细`));
+const showPresets = computed(() => presetOverride.value ?? activeHabits.value.length === 0);
+
+function togglePresets() {
+  presetOverride.value = !showPresets.value;
+}
 
 const dayCountMap = computed(() => {
   const map = new Map<string, number>();
@@ -483,7 +533,7 @@ async function deleteHabit() {
   }
 }
 
-async function quickCreate(preset: (typeof PRESETS)[number]) {
+async function quickCreate(preset: CheckinPreset) {
   await createCheckinHabit({
     name: preset.name,
     icon: preset.icon,
@@ -493,6 +543,28 @@ async function quickCreate(preset: (typeof PRESETS)[number]) {
   });
   ElMessage.success(`已添加「${preset.name}」`);
   await refreshAll();
+}
+
+async function addPresetGroup(group: { label: string; items: CheckinPreset[] }) {
+  if (creating.value) {
+    return;
+  }
+  creating.value = true;
+  try {
+    for (const item of group.items) {
+      await createCheckinHabit({
+        name: item.name,
+        icon: item.icon,
+        category: item.category,
+        note: item.note || undefined,
+        active: true,
+      });
+    }
+    ElMessage.success(`已添加${group.label} ${group.items.length} 项，可以按需停用`);
+    await refreshAll();
+  } finally {
+    creating.value = false;
+  }
 }
 
 watch(calendarValue, (value) => {
@@ -797,13 +869,64 @@ function tint(color?: string, alpha = 0.12) {
 }
 
 .empty-habits p {
-  margin: 0 0 10px;
+  margin: 0;
+}
+
+.preset-block {
+  margin-top: 12px;
+  padding-top: 4px;
+}
+
+.preset-block.separated {
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.preset-block .preset-group:first-child {
+  margin-top: 0;
+}
+
+.preset-block + .inactive-row {
+  margin-top: 12px;
 }
 
 .preset-row {
   display: flex;
+  min-width: 0;
+  flex: 1;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.preset-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.preset-label {
+  flex: 0 0 32px;
+  padding-top: 7px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.group-add {
+  flex: 0 0 auto;
+  padding-top: 7px;
+  color: #2563eb;
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.group-add:disabled {
+  color: #94a3b8;
+  cursor: default;
 }
 
 .preset-chip {
