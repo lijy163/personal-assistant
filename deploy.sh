@@ -81,13 +81,25 @@ fi
 GIT_FETCH_RETRIES="${GIT_FETCH_RETRIES:-5}"
 GIT_LOW_SPEED_LIMIT="${GIT_LOW_SPEED_LIMIT:-100}"
 GIT_LOW_SPEED_TIME="${GIT_LOW_SPEED_TIME:-300}"
+PROXY_PROBE_URL="${PROXY_PROBE_URL:-https://github.com}"
+PROXY_PROBE_TIMEOUT="${PROXY_PROBE_TIMEOUT:-8}"
+
+probe_proxy() {
+  [ -n "$1" ] || return 1
+  curl --proxy "$1" --silent --fail --output /dev/null \
+    --max-time "$PROXY_PROBE_TIMEOUT" "$PROXY_PROBE_URL"
+}
 
 fetch_origin() {
   local attempt delay
   local -a git_proxy_args=()
-  if [ -n "$HOST_PROXY_URL" ]; then
+  if [ -n "$HOST_PROXY_URL" ] && probe_proxy "$HOST_PROXY_URL"; then
     git_proxy_args=(-c "http.proxy=$HOST_PROXY_URL" -c "https.proxy=$HOST_PROXY_URL")
     log "Git 拉取使用代理 $HOST_PROXY_URL"
+  elif [ -n "$HOST_PROXY_URL" ]; then
+    log "代理 $HOST_PROXY_URL 探测失败（$PROXY_PROBE_URL），本次拉取改用直连"
+  else
+    log "Git 拉取使用直连"
   fi
   for attempt in $(seq 1 "$GIT_FETCH_RETRIES"); do
     log "拉取 origin/$BRANCH（第 $attempt/$GIT_FETCH_RETRIES 次）"
